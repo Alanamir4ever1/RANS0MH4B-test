@@ -1,0 +1,2251 @@
+--[[ A-90 HUB v7.2 [COMPACT] Fox / for Jack ]]
+local H = {}
+
+H.CG = game:GetService("CoreGui")
+H.Tw = game:GetService("TweenService")
+H.RS = game:GetService("RunService")
+H.Pl = game:GetService("Players")
+H.Tp = game:GetService("TeleportService")
+H.Ht = game:GetService("HttpService")
+H.VU = game:GetService("VirtualUser")
+H.UI = game:GetService("UserInputService")
+H.LP = H.Pl.LocalPlayer
+H.FD = Enum.Font.Code
+H.FB = Enum.Font.Code
+H.ICON = "rbxassetid://128896072556015"
+H.OWNER = 8761682431
+H.FRIEND = 3190738883
+H.TIER = (H.LP.UserId == H.OWNER and "owner") or (H.LP.UserId == H.FRIEND and "owner_friend") or "user"
+
+H.URLS = {
+    IY="https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source",
+    FLY="https://rawscripts.net/raw/Universal-Script-flight-of-the-Invincible-59729",
+    SKINSTEALER="https://raw.githubusercontent.com/Alanamir4ever1/R4NS0MH4B-SK1N-ST34LER/refs/heads/main/R4NS0MH4B%20SK1N%20ST34LER",
+    ABYSALL="https://raw.githubusercontent.com/therealcookiemonsterof1966/AbysallContinued/main/Games/Doors/Main.luau",
+    CHEESY="https://raw.githubusercontent.com/doram44/cheesy/refs/heads/main/cheesy.lua",
+    MSDOORS="https://www.msdoors.xyz/script",
+    DEX="https://raw.githubusercontent.com/BaconCheats/Leaked/refs/heads/main/DexPlusPlus.lua",
+    HYDROXIDE="https://raw.githubusercontent.com/Upbolt/Hydroxide/revision/init.lua",
+    CMDX="https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source",
+}
+
+H.THEMES = {
+    red    = { name="RED",    accent=Color3.fromRGB(230,45,60),  aHi=Color3.fromRGB(255,85,100),  aGlow=Color3.fromRGB(255,120,130), aDeep=Color3.fromRGB(130,15,30),  aEdge=Color3.fromRGB(180,25,40),  ember=Color3.fromRGB(255,100,50),  emberHi=Color3.fromRGB(255,150,100) },
+    blue   = { name="BLUE",   accent=Color3.fromRGB(45,110,230), aHi=Color3.fromRGB(85,155,255),  aGlow=Color3.fromRGB(120,180,255), aDeep=Color3.fromRGB(15,50,130),  aEdge=Color3.fromRGB(25,80,180),  ember=Color3.fromRGB(60,200,255),  emberHi=Color3.fromRGB(120,220,255) },
+    green  = { name="GREEN",  accent=Color3.fromRGB(45,200,90),  aHi=Color3.fromRGB(85,240,130),  aGlow=Color3.fromRGB(130,255,170), aDeep=Color3.fromRGB(15,100,40),  aEdge=Color3.fromRGB(25,150,65),  ember=Color3.fromRGB(140,255,100), emberHi=Color3.fromRGB(180,255,150) },
+    purple = { name="PURPLE", accent=Color3.fromRGB(160,45,230), aHi=Color3.fromRGB(200,85,255),  aGlow=Color3.fromRGB(220,120,255), aDeep=Color3.fromRGB(80,15,130),  aEdge=Color3.fromRGB(120,25,180), ember=Color3.fromRGB(255,100,220), emberHi=Color3.fromRGB(255,150,240) },
+    gold   = { name="GOLD",   accent=Color3.fromRGB(230,180,45), aHi=Color3.fromRGB(255,215,85),  aGlow=Color3.fromRGB(255,235,130), aDeep=Color3.fromRGB(130,90,15),  aEdge=Color3.fromRGB(180,130,25), ember=Color3.fromRGB(255,150,50),  emberHi=Color3.fromRGB(255,190,100) },
+    mono   = { name="MONO",   accent=Color3.fromRGB(160,160,165),aHi=Color3.fromRGB(220,220,225), aGlow=Color3.fromRGB(240,240,245), aDeep=Color3.fromRGB(70,70,75),   aEdge=Color3.fromRGB(110,110,115),ember=Color3.fromRGB(200,200,200), emberHi=Color3.fromRGB(230,230,230) },
+}
+
+H.CT = "red"
+H.CC = nil
+
+local T = {
+    s0=Color3.fromRGB(9,8,11), s1=Color3.fromRGB(18,16,20), s2=Color3.fromRGB(26,23,28),
+    s3=Color3.fromRGB(36,32,38), s4=Color3.fromRGB(48,42,50),
+    t0=Color3.fromRGB(252,250,251), t1=Color3.fromRGB(180,172,180),
+    t2=Color3.fromRGB(120,112,122), t3=Color3.fromRGB(80,72,82),
+    ok=Color3.fromRGB(80,220,130), okHi=Color3.fromRGB(140,255,180),
+    warn=Color3.fromRGB(255,190,80), danger=Color3.fromRGB(255,70,85), dangerHi=Color3.fromRGB(255,130,145),
+    accent=H.THEMES.red.accent, aHi=H.THEMES.red.aHi, aGlow=H.THEMES.red.aGlow,
+    aDeep=H.THEMES.red.aDeep, aEdge=H.THEMES.red.aEdge, ember=H.THEMES.red.ember, emberHi=H.THEMES.red.emberHi,
+}
+H.T = T
+
+-- Files
+H.FOLDER = "A90_HUB"; H.CACHE = H.FOLDER.."/cache"
+H.F_FAV = H.FOLDER.."/favorites.json"; H.F_HIST = H.FOLDER.."/history.json"
+H.F_SET = H.FOLDER.."/settings.json"; H.F_USER = H.FOLDER.."/user_scripts.json"
+H.F_AUTO = H.FOLDER.."/autoload.json"
+
+H.FS = false
+if type(writefile)=="function" and type(readfile)=="function" and type(isfile)=="function"
+and type(makefolder)=="function" and type(isfolder)=="function" then
+    pcall(function()
+        if not isfolder(H.FOLDER) then makefolder(H.FOLDER) end
+        if not isfolder(H.CACHE) then makefolder(H.CACHE) end
+    end)
+    H.FS = true
+end
+
+function H.hash(s)
+    local h = 2166136261
+    for i=1,#s do h = bit32.bxor(h, string.byte(s,i)); h = (h*16777619) % 4294967296 end
+    return string.format("%08x", h)
+end
+function H.readJ(p, d)
+    if not H.FS or not isfile(p) then return d end
+    local ok, data = pcall(readfile, p)
+    if not ok or not data or data=="" then return d end
+    local ok2, dec = pcall(function() return H.Ht:JSONDecode(data) end)
+    return ok2 and type(dec)=="table" and dec or d
+end
+function H.writeJ(p, d)
+    if not H.FS then return end
+    local ok, enc = pcall(function() return H.Ht:JSONEncode(d) end)
+    if ok then pcall(writefile, p, enc) end
+end
+function H.fetch(url)
+    local ok, c = pcall(function() return game:HttpGet(url) end)
+    if ok and c and c~="" then
+        if H.FS then pcall(writefile, H.CACHE.."/"..H.hash(url)..".lua", c) end
+        return c
+    end
+    if H.FS then
+        local p = H.CACHE.."/"..H.hash(url)..".lua"
+        if isfile(p) then
+            local ok2, c2 = pcall(readfile, p)
+            if ok2 then return c2 end
+        end
+    end
+    error("fetch failed")
+end
+
+-- Cleanup
+for _, n in ipairs({ "A90_HUB","A90_HUB_v3","A90_HUB_v4","A90_HUB_v5","A90_HUB_v6","A90_HUB_v7" }) do
+    local o = H.CG:FindFirstChild(n); if o then o:Destroy() end
+end
+
+-- GUI root
+H.gui = Instance.new("ScreenGui")
+H.gui.Name = "A90_HUB"; H.gui.ResetOnSpawn = false; H.gui.IgnoreGuiInset = true
+H.gui.DisplayOrder = 200; H.gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+H.gui.Parent = H.CG
+
+-- Helper functions
+H.themeAppliers = {}
+function H.onTheme(fn) table.insert(H.themeAppliers, fn) end
+function H.corner(i, r) local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0,r); c.Parent = i; return c end
+function H.stroke(i, col, tk, tr)
+    local s = Instance.new("UIStroke"); s.Color = col or Color3.new(1,1,1)
+    s.Thickness = tk or 1; s.Transparency = tr or 0; s.Parent = i; return s
+end
+function H.tw(i, p, d, st, di)
+    local info = TweenInfo.new(d or 0.2, st or Enum.EasingStyle.Quart, di or Enum.EasingDirection.Out)
+    local t = H.Tw:Create(i, info, p); t:Play(); return t
+end
+function H.grad(i, cols, rot, tr)
+    local g = Instance.new("UIGradient"); local kp = {}
+    for a,c in ipairs(cols) do table.insert(kp, ColorSequenceKeypoint.new((a-1)/(#cols-1), c)) end
+    g.Color = ColorSequence.new(kp); g.Rotation = rot or 0
+    if tr then
+        local tp = {}
+        for a,tv in ipairs(tr) do table.insert(tp, NumberSequenceKeypoint.new((a-1)/(#tr-1), tv)) end
+        g.Transparency = NumberSequence.new(tp)
+    end
+    g.Parent = i; return g
+end
+H.GC = "!@#$%^&*<>?/\\|=+~0123456789ABCDEF"
+function H.scr(txt, cnt)
+    cnt = cnt or 1; local ch = {}
+    for i=1,#txt do ch[i] = txt:sub(i,i) end
+    for _=1,cnt do
+        local k = math.random(1,#ch)
+        if ch[k]~=" " then ch[k] = H.GC:sub(math.random(1,#H.GC), math.random(1,#H.GC)) end
+    end
+    return table.concat(ch)
+end
+
+-- Registries
+H.builtin = {}; H.favOn = {}; H.favOrder = {}; H.userScripts = {}; H.autoloadSet = {}
+H.registry = {}
+H.history = {}
+
+-- RENDERERS (forward)
+H.renderFaves = function() end
+H.saveFavorites = function() end
+H.loadFavorites = function() end
+H.toggleFavorite = function() end
+H.saveAutoload = function() end
+H.renderAutoload = function() end
+H.renderUserScripts = function() end
+H.deleteUserScript = function() end
+H.saveHistory = function() end
+H.renderHistory = function() end
+H.saveUserScripts = function() end
+H.saveSettings = function() end
+H.applyTheme = function() end
+H.buildCustomTheme = function(c)
+    return {
+        name = "CUSTOM",
+        accent = c,
+        aHi = Color3.new(math.min(1,c.R+0.15), math.min(1,c.G+0.15), math.min(1,c.B+0.15)),
+        aGlow = Color3.new(math.min(1,c.R+0.3), math.min(1,c.G+0.3), math.min(1,c.B+0.3)),
+        aDeep = Color3.new(c.R*0.4, c.G*0.4, c.B*0.4),
+        aEdge = Color3.new(c.R*0.7, c.G*0.7, c.B*0.7),
+        ember = Color3.new(math.min(1,c.R+0.2), math.min(1,c.G+0.3), math.min(1,c.B+0.1)),
+        emberHi = Color3.new(math.min(1,c.R+0.4), math.min(1,c.G+0.4), math.min(1,c.B+0.3)),
+    }
+end
+
+-- INTRO
+function H.playIntro(onDone)
+    local veil = Instance.new("Frame")
+    veil.Size = UDim2.new(1,0,1,0); veil.BackgroundColor3 = T.s0
+    veil.BackgroundTransparency = 1; veil.BorderSizePixel = 0; veil.ZIndex = 500; veil.Parent = H.gui
+
+    local title = Instance.new("TextLabel")
+    title.AnchorPoint = Vector2.new(0.5,0.5); title.Position = UDim2.new(0.5,0,0.5,0)
+    title.Size = UDim2.new(0,700,0,100); title.BackgroundTransparency = 1
+    title.Text = "A-90 HUB"; title.TextColor3 = Color3.new(1,1,1)
+    title.Font = H.FD; title.TextSize = 68
+    title.TextTransparency = 1; title.TextStrokeTransparency = 1; title.ZIndex = 503; title.Parent = veil
+
+    local tg = H.grad(title, { T.aHi, T.aGlow, T.aHi }, 0)
+
+    local sub = Instance.new("TextLabel")
+    sub.AnchorPoint = Vector2.new(0.5,0.5); sub.Position = UDim2.new(0.5,0,0.5,76)
+    sub.Size = UDim2.new(0,700,0,24); sub.BackgroundTransparency = 1
+    sub.Text = "> initializing"; sub.TextColor3 = T.t2
+    sub.Font = H.FD; sub.TextSize = 14; sub.TextTransparency = 1; sub.ZIndex = 502; sub.Parent = veil
+
+    local conn = H.RS.RenderStepped:Connect(function()
+        if not tg.Parent then return end
+        tg.Offset = Vector2.new((tick()%4)/4, 0)
+    end)
+
+    task.spawn(function()
+        while title.Parent do
+            task.wait(math.random(50,80)/100)
+            title.Text = H.scr("A-90 HUB",1); task.wait(0.03); title.Text = "A-90 HUB"
+        end
+    end)
+
+    H.tw(veil, {BackgroundTransparency=0.15}, 0.35)
+    H.tw(title, {TextTransparency=0, TextStrokeTransparency=0.75}, 0.45)
+    task.delay(0.25, function() H.tw(sub, {TextTransparency=0, Position=UDim2.new(0.5,0,0.5,82)}, 0.35) end)
+
+    task.delay(1.4, function()
+        H.tw(title, {TextTransparency=1, TextStrokeTransparency=1}, 0.35)
+        H.tw(sub, {TextTransparency=1}, 0.3)
+        H.tw(veil, {BackgroundTransparency=1}, 0.5)
+        task.delay(0.55, function()
+            if conn then conn:Disconnect() end
+            if veil then veil:Destroy() end
+            if onDone then onDone() end
+        end)
+    end)
+end
+
+-- CONTAINER
+H.W = 720; H.H = 540
+H.container = Instance.new("Frame")
+H.container.Name = "Container"; H.container.AnchorPoint = Vector2.new(0.5,0.5)
+H.container.Position = UDim2.new(0.5,0,0.5,0); H.container.Size = UDim2.new(0,H.W,0,H.H)
+H.container.BackgroundTransparency = 1; H.container.Active = true
+H.container.Draggable = true; H.container.Visible = false; H.container.Parent = H.gui
+
+H.cScale = Instance.new("UIScale"); H.cScale.Scale = 0.05; H.cScale.Parent = H.container
+
+do
+    for i, off in ipairs({16, 10, 5, 2}) do
+        local sh = Instance.new("Frame")
+        sh.Size = UDim2.new(1,0,1,0); sh.Position = UDim2.new(0,0,0,off)
+        sh.BackgroundColor3 = Color3.new(0,0,0); sh.BackgroundTransparency = 0.94 - i*0.06
+        sh.BorderSizePixel = 0; sh.ZIndex = 1; sh.Parent = H.container
+        H.corner(sh, 20)
+    end
+end
+
+-- MAIN PANEL
+H.main = Instance.new("Frame")
+H.main.Size = UDim2.new(1,0,1,0); H.main.BackgroundColor3 = T.s1
+H.main.BackgroundTransparency = 0.08; H.main.BorderSizePixel = 0
+H.main.ClipsDescendants = true; H.main.ZIndex = 4; H.main.Parent = H.container
+H.corner(H.main, 20); H.grad(H.main, {T.s1, T.s0}, 135)
+
+H.mainStroke = Instance.new("UIStroke")
+H.mainStroke.Thickness = 2; H.mainStroke.Color = Color3.new(1,1,1); H.mainStroke.Transparency = 0
+H.mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; H.mainStroke.Parent = H.main
+
+H.sGrad = Instance.new("UIGradient")
+H.sGrad.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0.00, T.aHi), ColorSequenceKeypoint.new(0.25, T.aGlow),
+    ColorSequenceKeypoint.new(0.50, T.accent), ColorSequenceKeypoint.new(0.75, T.aEdge),
+    ColorSequenceKeypoint.new(1.00, T.aHi),
+})
+H.sGrad.Parent = H.mainStroke
+
+H.onTheme(function()
+    H.sGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.00, T.aHi), ColorSequenceKeypoint.new(0.25, T.aGlow),
+        ColorSequenceKeypoint.new(0.50, T.accent), ColorSequenceKeypoint.new(0.75, T.aEdge),
+        ColorSequenceKeypoint.new(1.00, T.aHi),
+    })
+end)
+
+task.spawn(function()
+    while H.main.Parent do
+        H.sGrad.Offset = Vector2.new((tick()%6)/6, 0)
+        H.RS.RenderStepped:Wait()
+    end
+end)
+
+H.gridLines = {}
+do
+    local gh = Instance.new("Frame")
+    gh.Size = UDim2.new(1,0,1,0); gh.BackgroundTransparency = 1; gh.ZIndex = 2; gh.Parent = H.main
+    for i=0,13 do
+        local l = Instance.new("Frame")
+        l.Size = UDim2.new(1,0,0,1); l.Position = UDim2.new(0,0,0,i*40)
+        l.BackgroundColor3 = T.accent; l.BackgroundTransparency = 0.96
+        l.BorderSizePixel = 0; l.ZIndex = 2; l.Parent = gh
+        table.insert(H.gridLines, l)
+    end
+    for i=0,18 do
+        local l = Instance.new("Frame")
+        l.Size = UDim2.new(0,1,1,0); l.Position = UDim2.new(0,i*40,0,0)
+        l.BackgroundColor3 = T.accent; l.BackgroundTransparency = 0.96
+        l.BorderSizePixel = 0; l.ZIndex = 2; l.Parent = gh
+        table.insert(H.gridLines, l)
+    end
+end
+H.onTheme(function() for _, l in ipairs(H.gridLines) do l.BackgroundColor3 = T.accent end end)
+
+-- HEADER
+H.header = Instance.new("Frame")
+H.header.Size = UDim2.new(1,0,0,76); H.header.BackgroundTransparency = 1
+H.header.ZIndex = 10; H.header.Parent = H.main
+
+do
+    local ib = Instance.new("Frame")
+    ib.Size = UDim2.new(0,44,0,44); ib.Position = UDim2.new(0,20,0,16)
+    ib.BackgroundColor3 = T.s2; ib.BorderSizePixel = 0; ib.ZIndex = 11
+    ib.ClipsDescendants = true; ib.Parent = H.header
+    H.corner(ib, 12); local ibs = H.stroke(ib, T.accent, 1.5, 0.4)
+    H.onTheme(function() ibs.Color = T.accent end)
+
+    local img = Instance.new("ImageLabel")
+    img.Size = UDim2.new(1,0,1,0); img.BackgroundTransparency = 1
+    img.Image = H.ICON; img.ScaleType = Enum.ScaleType.Crop
+    img.ZIndex = 12; img.Parent = ib
+
+    local tg = Instance.new("TextLabel")
+    tg.Size = UDim2.new(1,-280,0,24); tg.Position = UDim2.new(0,76,0,16)
+    tg.BackgroundTransparency = 1; tg.Text = "A-90 HUB"
+    tg.TextColor3 = T.accent; tg.Font = H.FD; tg.TextSize = 20
+    tg.TextTransparency = 0.5; tg.TextXAlignment = Enum.TextXAlignment.Left
+    tg.ZIndex = 10; tg.Parent = H.header
+    H.onTheme(function() tg.TextColor3 = T.accent end)
+
+    local th = Instance.new("TextLabel")
+    th.Size = UDim2.new(1,-280,0,24); th.Position = UDim2.new(0,75,0,16)
+    th.BackgroundTransparency = 1; th.Text = "A-90 HUB"
+    th.TextColor3 = T.t0; th.Font = H.FD; th.TextSize = 20
+    th.TextXAlignment = Enum.TextXAlignment.Left; th.ZIndex = 11; th.Parent = H.header
+
+    task.spawn(function()
+        while th.Parent do
+            task.wait(math.random(25,60)/100)
+            local s = H.scr("A-90 HUB",1); th.Text = s; tg.Text = s
+            task.wait(0.04); th.Text = "A-90 HUB"; tg.Text = "A-90 HUB"
+        end
+    end)
+
+    local d = Instance.new("Frame")
+    d.Size = UDim2.new(0,5,0,5); d.Position = UDim2.new(0,77,0,47)
+    d.BackgroundColor3 = T.ok; d.BorderSizePixel = 0; d.ZIndex = 11; d.Parent = H.header
+    H.corner(d, 999)
+    task.spawn(function()
+        while d.Parent do
+            H.tw(d, {BackgroundTransparency=0.7}, 1); task.wait(1)
+            H.tw(d, {BackgroundTransparency=0}, 1); task.wait(1)
+        end
+    end)
+
+    local sb = Instance.new("TextLabel")
+    sb.Size = UDim2.new(1,-280,0,16); sb.Position = UDim2.new(0,88,0,42)
+    sb.BackgroundTransparency = 1; sb.Text = "premium multi-tab loader"
+    sb.TextColor3 = T.t2; sb.Font = H.FD; sb.TextSize = 11
+    sb.TextXAlignment = Enum.TextXAlignment.Left; sb.ZIndex = 10; sb.Parent = H.header
+
+    -- Tier badge
+    local tb = Instance.new("Frame")
+    tb.Size = UDim2.new(0,110,0,20); tb.Position = UDim2.new(1,-276,0,28)
+    tb.BackgroundColor3 = T.ok; tb.BackgroundTransparency = 0.15
+    tb.BorderSizePixel = 0; tb.ZIndex = 11; tb.Visible = false; tb.Parent = H.header
+    H.corner(tb, 6); H.stroke(tb, T.okHi, 1, 0.4)
+
+    local tl = Instance.new("TextLabel")
+    tl.Size = UDim2.new(1,0,1,0); tl.BackgroundTransparency = 1
+    tl.Text = "OWNER"; tl.TextColor3 = Color3.fromRGB(5,30,15)
+    tl.Font = H.FD; tl.TextSize = 10; tl.ZIndex = 12; tl.Parent = tb
+
+    if H.TIER == "owner" then
+        tb.Visible = true; tb.BackgroundColor3 = T.ok
+        tl.Text = "OWNER"; tl.TextColor3 = Color3.fromRGB(5,30,15)
+    elseif H.TIER == "owner_friend" then
+        tb.Visible = true; tb.BackgroundColor3 = T.warn
+        tl.Text = "OWNER_FRIENDS"; tl.TextColor3 = Color3.fromRGB(40,28,0)
+    end
+
+    -- Version
+    local vb = Instance.new("Frame")
+    vb.Size = UDim2.new(0,50,0,20); vb.Position = UDim2.new(1,-152,0,28)
+    vb.BackgroundColor3 = T.s3; vb.BackgroundTransparency = 0.4
+    vb.BorderSizePixel = 0; vb.ZIndex = 11; vb.Parent = H.header
+    H.corner(vb, 6); local vbs = H.stroke(vb, T.accent, 1, 0.7)
+
+    local vl = Instance.new("TextLabel")
+    vl.Size = UDim2.new(1,0,1,0); vl.BackgroundTransparency = 1
+    vl.Text = "v7.2"; vl.TextColor3 = T.aHi
+    vl.Font = H.FD; vl.TextSize = 10; vl.ZIndex = 12; vl.Parent = vb
+    H.onTheme(function() vbs.Color = T.accent; vl.TextColor3 = T.aHi end)
+
+    -- Close
+    local cl = Instance.new("TextButton")
+    cl.Size = UDim2.new(0,32,0,32); cl.Position = UDim2.new(1,-48,0,22)
+    cl.BackgroundColor3 = T.s3; cl.BackgroundTransparency = 0.5
+    cl.BorderSizePixel = 0; cl.Text = "×"; cl.TextColor3 = T.t1
+    cl.Font = H.FD; cl.TextSize = 20; cl.AutoButtonColor = false
+    cl.ZIndex = 12; cl.Parent = H.header; H.corner(cl, 8)
+    cl.MouseEnter:Connect(function() H.tw(cl, {BackgroundColor3=T.danger, BackgroundTransparency=0, TextColor3=T.t0}, 0.2) end)
+    cl.MouseLeave:Connect(function() H.tw(cl, {BackgroundColor3=T.s3, BackgroundTransparency=0.5, TextColor3=T.t1}, 0.2) end)
+    cl.MouseButton1Click:Connect(function() H.gui:Destroy() end)
+
+    -- Minimize
+    H.minBtn = Instance.new("TextButton")
+    H.minBtn.Size = UDim2.new(0,32,0,32); H.minBtn.Position = UDim2.new(1,-92,0,22)
+    H.minBtn.BackgroundColor3 = T.s3; H.minBtn.BackgroundTransparency = 0.5
+    H.minBtn.BorderSizePixel = 0; H.minBtn.Text = "−"; H.minBtn.TextColor3 = T.t1
+    H.minBtn.Font = H.FD; H.minBtn.TextSize = 20; H.minBtn.AutoButtonColor = false
+    H.minBtn.ZIndex = 12; H.minBtn.Parent = H.header; H.corner(H.minBtn, 8)
+    H.minBtn.MouseEnter:Connect(function() H.tw(H.minBtn, {BackgroundColor3=T.accent, BackgroundTransparency=0, TextColor3=T.t0}, 0.2) end)
+    H.minBtn.MouseLeave:Connect(function() H.tw(H.minBtn, {BackgroundColor3=T.s3, BackgroundTransparency=0.5, TextColor3=T.t1}, 0.2) end)
+end
+
+-- SEARCH
+H.searchInput = nil
+do
+    local sb = Instance.new("Frame")
+    sb.Size = UDim2.new(1,-40,0,26); sb.Position = UDim2.new(0,20,0,84)
+    sb.BackgroundColor3 = T.s2; sb.BackgroundTransparency = 0.4
+    sb.BorderSizePixel = 0; sb.ZIndex = 8; sb.Parent = H.main
+    H.corner(sb, 8); local ss = H.stroke(sb, T.accent, 1, 0.8)
+
+    local si = Instance.new("TextLabel")
+    si.Size = UDim2.new(0,26,1,0); si.Position = UDim2.new(0,8,0,0)
+    si.BackgroundTransparency = 1; si.Text = "⌕"
+    si.TextColor3 = T.aHi; si.Font = H.FD; si.TextSize = 16
+    si.ZIndex = 9; si.Parent = sb
+    H.onTheme(function() ss.Color = T.accent; si.TextColor3 = T.aHi end)
+
+    local inp = Instance.new("TextBox")
+    inp.Size = UDim2.new(1,-80,1,0); inp.Position = UDim2.new(0,32,0,0)
+    inp.BackgroundTransparency = 1; inp.Text = ""
+    inp.PlaceholderText = "search tiles..."; inp.PlaceholderColor3 = T.t3
+    inp.TextColor3 = T.t0; inp.Font = H.FD; inp.TextSize = 12
+    inp.TextXAlignment = Enum.TextXAlignment.Left
+    inp.ClearTextOnFocus = false; inp.ZIndex = 9; inp.Parent = sb
+    H.searchInput = inp
+
+    local sc = Instance.new("TextButton")
+    sc.Size = UDim2.new(0,22,1,0); sc.Position = UDim2.new(1,-26,0,0)
+    sc.BackgroundTransparency = 1; sc.Text = "×"
+    sc.TextColor3 = T.t2; sc.Font = H.FD; sc.TextSize = 16; sc.AutoButtonColor = false
+    sc.ZIndex = 9; sc.Parent = sb
+    sc.MouseEnter:Connect(function() sc.TextColor3 = T.danger end)
+    sc.MouseLeave:Connect(function() sc.TextColor3 = T.t2 end)
+    sc.MouseButton1Click:Connect(function() inp.Text = "" end)
+end
+
+-- TABS
+H.TABS = {
+    {name="MAIN",icon="◆"}, {name="DOORS",icon="◈"}, {name="TOOLS",icon="◇"},
+    {name="UTILITY",icon="⬡"}, {name="CUSTOM",icon="◉"}, {name="USER",icon="✚"},
+    {name="FAVES",icon="★"}, {name="AUTO",icon="▶"}, {name="SETUP",icon="⚙"},
+}
+H.TAB_W = math.floor((H.W - 40) / #H.TABS)
+H.tabButtons = {}; H.tabIcons = {}
+H.pages = {}
+H.activeTab = "MAIN"
+
+do
+    local tY, tH = 118, 40
+    local tb = Instance.new("Frame")
+    tb.Size = UDim2.new(0, H.TAB_W * #H.TABS, 0, tH)
+    tb.Position = UDim2.new(0, 20, 0, tY)
+    tb.BackgroundColor3 = T.s2; tb.BackgroundTransparency = 0.4
+    tb.BorderSizePixel = 0; tb.ZIndex = 8; tb.Parent = H.main
+    H.corner(tb, 12); H.stroke(tb, Color3.new(1,1,1), 1, 0.92)
+
+    H.pill = Instance.new("Frame")
+    H.pill.Size = UDim2.new(0, H.TAB_W - 8, 1, -8); H.pill.Position = UDim2.new(0, 4, 0, 4)
+    H.pill.BackgroundColor3 = T.accent; H.pill.BorderSizePixel = 0
+    H.pill.ZIndex = 9; H.pill.Parent = tb; H.corner(H.pill, 9)
+    local pg = H.grad(H.pill, {T.aHi, T.aEdge}, 135)
+    H.stroke(H.pill, Color3.new(1,1,1), 1, 0.85)
+    H.onTheme(function()
+        pg.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, T.aHi),
+            ColorSequenceKeypoint.new(1, T.aEdge),
+        })
+    end)
+
+    for i, tab in ipairs(H.TABS) do
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, H.TAB_W, 1, 0); b.Position = UDim2.new(0, (i-1)*H.TAB_W, 0, 0)
+        b.BackgroundTransparency = 1; b.Text = ""; b.AutoButtonColor = false
+        b.ZIndex = 10; b.Parent = tb
+
+        local ic = Instance.new("TextLabel")
+        ic.Size = UDim2.new(0,12,1,0); ic.Position = UDim2.new(0,6,0,0)
+        ic.BackgroundTransparency = 1; ic.Text = tab.icon
+        ic.TextColor3 = (i==1) and T.t0 or T.t2
+        ic.Font = H.FD; ic.TextSize = 10; ic.ZIndex = 11; ic.Parent = b
+
+        local lb = Instance.new("TextLabel")
+        lb.Size = UDim2.new(1,-18,1,0); lb.Position = UDim2.new(0,18,0,0)
+        lb.BackgroundTransparency = 1; lb.Text = tab.name
+        lb.TextColor3 = (i==1) and T.t0 or T.t2
+        lb.Font = H.FD; lb.TextSize = 8
+        lb.TextXAlignment = Enum.TextXAlignment.Left; lb.ZIndex = 11; lb.Parent = b
+
+        H.tabButtons[tab.name] = b
+        H.tabIcons[tab.name] = {icon = ic, label = lb}
+    end
+
+    -- Body
+    local body = Instance.new("Frame")
+    body.Size = UDim2.new(1,0,0,H.H - (tY+tH+14) - 40); body.Position = UDim2.new(0,0,0,tY+tH+14)
+    body.BackgroundTransparency = 1; body.ZIndex = 8; body.Parent = H.main
+
+    for _, tab in ipairs(H.TABS) do
+        local pg = Instance.new("Frame")
+        pg.Size = UDim2.new(1,0,1,0); pg.BackgroundTransparency = 1
+        pg.Visible = (tab.name == "MAIN"); pg.ZIndex = 8; pg.Parent = body
+        H.pages[tab.name] = pg
+    end
+end
+
+-- State machine
+H.S = {R="READY", L="LOADING", D="LOADED", E="ERROR"}
+H.makeSM = function(ui, lbl, rh, lh, dh, eh)
+    local state = H.S.R
+    local dots = nil
+    local function stopDots() if dots then pcall(function() task.cancel(dots) end); dots = nil end end
+    local function setCol(c1,c2,h1,h2,st)
+        ui.g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,c1), ColorSequenceKeypoint.new(1,c2)})
+        ui.o.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,h1), ColorSequenceKeypoint.new(1,h2)})
+        H.tw(ui.sk, {Transparency = st or 0.3}, 0.4)
+    end
+    local function set(s)
+        state = s; stopDots()
+        local B = {T.accent, T.aDeep, T.aHi, T.emberHi}
+        if s == H.S.R then
+            ui.t.Text = lbl; setCol(B[1],B[2],B[3],B[4], 0.75)
+            ui.h.Text = rh; ui.h.TextColor3 = T.t2
+        elseif s == H.S.L then
+            setCol(T.s3, T.s2, T.accent, T.ember, 0.5)
+            ui.h.Text = lh; ui.h.TextColor3 = T.warn
+            dots = task.spawn(function()
+                local n = 0
+                while state == H.S.L do
+                    n = (n%3)+1; ui.t.Text = "LOADING"..string.rep(".",n); task.wait(0.3)
+                end
+            end)
+        elseif s == H.S.D then
+            ui.t.Text = "INJECTED"; setCol(T.ember, T.accent, T.aHi, T.emberHi, 0.4)
+            ui.h.Text = dh; ui.h.TextColor3 = T.ember
+        elseif s == H.S.E then
+            ui.t.Text = "RETRY"; setCol(T.aDeep, T.s0, T.danger, T.aDeep, 0.4)
+            ui.h.Text = eh; ui.h.TextColor3 = T.danger
+        end
+    end
+    local sm = {
+        get = function() return state end,
+        ready = function() set(H.S.R) end,
+        loading = function() set(H.S.L) end,
+        loaded = function() set(H.S.D) end,
+        error = function() set(H.S.E) end,
+        refresh = function() set(state) end,
+    }
+    set(H.S.R)
+    return sm
+end
+
+-- Inject
+H.doInject = function(sm, url, name)
+    if sm.get() == H.S.L or sm.get() == H.S.D then return end
+    sm.loading()
+    task.spawn(function()
+        local ok, err = pcall(function()
+            loadstring(H.fetch(url))()
+        end)
+        if ok then sm.loaded()
+        else
+            warn("[A-90] "..name.." fail: "..tostring(err))
+            sm.error(); task.wait(3)
+            if sm.get() == H.S.E then sm.ready() end
+        end
+    end)
+end
+
+-- Grid tile
+H.GRID = {cols=3, pad=20, gap=12, tileW=213, tileH=110, rowGap=12}
+H.makeTile = function(parent, idx, ico, lbl, hint, key, opts)
+    opts = opts or {}
+    local col = ((idx-1) % H.GRID.cols) + 1
+    local row = math.floor((idx-1) / H.GRID.cols) + 1
+    local x = H.GRID.pad + (col-1) * (H.GRID.tileW + H.GRID.gap)
+    local y = H.GRID.pad + (row-1) * (H.GRID.tileH + H.GRID.rowGap)
+
+    local slot = Instance.new("Frame")
+    slot.Name = "slot"
+    slot.Size = UDim2.new(0, H.GRID.tileW, 0, H.GRID.tileH + 18)
+    slot.Position = UDim2.new(0, x, 0, y)
+    slot.BackgroundTransparency = 1; slot.ZIndex = 8; slot.Parent = parent
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1,0,0,H.GRID.tileH); btn.BackgroundColor3 = Color3.new(1,1,1)
+    btn.BorderSizePixel = 0; btn.Text = ""; btn.AutoButtonColor = false
+    btn.ClipsDescendants = true; btn.ZIndex = 8; btn.Parent = slot
+    H.corner(btn, 14)
+
+    local g = H.grad(btn, {T.accent, T.aDeep}, 135)
+    local sk = H.stroke(btn, Color3.new(1,1,1), 1, 0.75)
+
+    local ov = Instance.new("Frame")
+    ov.Size = UDim2.new(1,0,1,0); ov.BackgroundColor3 = Color3.new(1,1,1)
+    ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0
+    ov.ZIndex = 10; ov.Parent = btn; H.corner(ov, 14)
+    local og = H.grad(ov, {T.aHi, T.emberHi}, 135)
+
+    local sh = Instance.new("Frame")
+    sh.Size = UDim2.new(0,60,2,0); sh.Position = UDim2.new(0,-100,-0.5,0)
+    sh.BackgroundColor3 = Color3.new(1,1,1); sh.BackgroundTransparency = 0.7
+    sh.BorderSizePixel = 0; sh.Rotation = 20; sh.ZIndex = 11; sh.Parent = btn
+
+    local ct = Instance.new("Frame")
+    ct.Size = UDim2.new(1,0,1,0); ct.BackgroundTransparency = 1
+    ct.ZIndex = 12; ct.Parent = btn
+
+    local ly = Instance.new("UIListLayout")
+    ly.FillDirection = Enum.FillDirection.Horizontal
+    ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    ly.VerticalAlignment = Enum.VerticalAlignment.Center
+    ly.Padding = UDim.new(0,12); ly.Parent = ct
+
+    local il = Instance.new("TextLabel")
+    il.Size = UDim2.new(0,34,0,34); il.BackgroundTransparency = 1
+    il.Text = ico; il.TextColor3 = Color3.new(1,1,1)
+    il.Font = H.FD; il.TextSize = 26; il.LayoutOrder = 1; il.ZIndex = 13; il.Parent = ct
+
+    local nl = Instance.new("TextLabel")
+    nl.AutomaticSize = Enum.AutomaticSize.X; nl.Size = UDim2.new(0,0,1,0)
+    nl.BackgroundTransparency = 1; nl.Text = lbl
+    nl.TextColor3 = Color3.new(1,1,1); nl.Font = H.FD
+    nl.TextSize = 16; nl.LayoutOrder = 2; nl.ZIndex = 13; nl.Parent = ct
+
+    local hl = Instance.new("TextLabel")
+    hl.Size = UDim2.new(1,0,0,16); hl.Position = UDim2.new(0,0,0,H.GRID.tileH+2)
+    hl.BackgroundTransparency = 1; hl.Text = hint
+    hl.TextColor3 = T.t2; hl.Font = H.FB
+    hl.TextSize = 12; hl.TextXAlignment = Enum.TextXAlignment.Center
+    hl.TextTruncate = Enum.TextTruncate.AtEnd; hl.ZIndex = 8; hl.Parent = slot
+
+    local star = Instance.new("TextButton")
+    star.Size = UDim2.new(0,24,0,24); star.Position = UDim2.new(1,-28,0,6)
+    star.BackgroundColor3 = T.s0; star.BackgroundTransparency = 0.25
+    star.BorderSizePixel = 0; star.Text = "☆"; star.TextColor3 = T.t2
+    star.Font = H.FD; star.TextSize = 14; star.AutoButtonColor = false
+    star.ZIndex = 15; star.Parent = btn; H.corner(star, 6)
+    star.MouseEnter:Connect(function() H.tw(star, {BackgroundTransparency=0}, 0.15) end)
+    star.MouseLeave:Connect(function() H.tw(star, {BackgroundTransparency=0.25}, 0.15) end)
+    star.MouseButton1Click:Connect(function() H.toggleFavorite(key) end)
+
+    if opts.onDelete then
+        local d = Instance.new("TextButton")
+        d.Size = UDim2.new(0,24,0,24); d.Position = UDim2.new(1,-56,0,6)
+        d.BackgroundColor3 = T.s0; d.BackgroundTransparency = 0.25
+        d.BorderSizePixel = 0; d.Text = "×"; d.TextColor3 = T.t2
+        d.Font = H.FD; d.TextSize = 16; d.AutoButtonColor = false
+        d.ZIndex = 15; d.Parent = btn; H.corner(d, 6)
+        d.MouseEnter:Connect(function() H.tw(d, {BackgroundTransparency=0, TextColor3=T.danger}, 0.15) end)
+        d.MouseLeave:Connect(function() H.tw(d, {BackgroundTransparency=0.25, TextColor3=T.t2}, 0.15) end)
+        d.MouseButton1Click:Connect(function() task.spawn(opts.onDelete) end)
+    end
+
+    btn.MouseEnter:Connect(function()
+        H.tw(ov, {BackgroundTransparency=0}, 0.25); H.tw(sk, {Transparency=0.3}, 0.25)
+        sh.Position = UDim2.new(0,-100,-0.5,0)
+        H.tw(sh, {Position = UDim2.new(1,40,-0.5,0)}, 0.7, Enum.EasingStyle.Quad)
+    end)
+    btn.MouseLeave:Connect(function()
+        H.tw(ov, {BackgroundTransparency=1}, 0.25); H.tw(sk, {Transparency=0.75}, 0.25)
+    end)
+    btn.MouseButton1Down:Connect(function() H.tw(btn, {BackgroundTransparency=0.15}, 0.08) end)
+    btn.MouseButton1Up:Connect(function() H.tw(btn, {BackgroundTransparency=0}, 0.12) end)
+
+    table.insert(H.registry, {ui = {slot = slot}, label = lbl, page = parent})
+
+    local r = {slot=slot, button=btn, btnText=nl, hint=hl, g=g, sk=sk, o=og, star=star}
+    return r
+end
+
+-- ============================================================
+-- MAIN PAGE
+-- ============================================================
+do
+    local ui = H.makeTile(H.pages.MAIN, 1, "$", "INFINITE YIELD", "> click to inject", "iy")
+    local sm = H.makeSM(ui, "INFINITE YIELD", "> click to inject", "> fetching...", "> running", "> fail")
+    H.builtin.iy = {ui=ui, sm=sm, url=H.URLS.IY, label="INFINITE YIELD", icon="$",
+        run = function() H.doInject(sm, H.URLS.IY, "Infinite Yield") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.iy.run)
+end
+do
+    local ui = H.makeTile(H.pages.MAIN, 2, "~", "INVISIBLE FLY", "> click to inject", "fly")
+    local sm = H.makeSM(ui, "INVISIBLE FLY", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.fly = {ui=ui, sm=sm, url=H.URLS.FLY, label="INVISIBLE FLY", icon="~",
+        run = function() H.doInject(sm, H.URLS.FLY, "Invisible Fly") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.fly.run)
+end
+do
+    local ui = H.makeTile(H.pages.MAIN, 3, "@", "SKIN STEALER", "> click to inject", "skin")
+    local sm = H.makeSM(ui, "SKIN STEALER", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.skin = {ui=ui, sm=sm, url=H.URLS.SKINSTEALER, label="SKIN STEALER", icon="@",
+        run = function() H.doInject(sm, H.URLS.SKINSTEALER, "Skin Stealer") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.skin.run)
+end
+
+-- DOORS
+do
+    local ui = H.makeTile(H.pages.DOORS, 1, "◈", "ABYSALL HUB", "> click to inject", "abysall")
+    local sm = H.makeSM(ui, "ABYSALL HUB", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.abysall = {ui=ui, sm=sm, url=H.URLS.ABYSALL, label="ABYSALL HUB", icon="◈",
+        run = function() H.doInject(sm, H.URLS.ABYSALL, "Abysall Hub") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.abysall.run)
+end
+do
+    local ui = H.makeTile(H.pages.DOORS, 2, "◆", "CHEESY HUB", "> click to inject", "cheesy")
+    local sm = H.makeSM(ui, "CHEESY HUB", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.cheesy = {ui=ui, sm=sm, url=H.URLS.CHEESY, label="CHEESY HUB", icon="◆",
+        run = function() H.doInject(sm, H.URLS.CHEESY, "Cheesy Hub") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.cheesy.run)
+end
+do
+    local ui = H.makeTile(H.pages.DOORS, 3, "§", "MS DOORS", "> click to inject", "msdoors")
+    local sm = H.makeSM(ui, "MS DOORS", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.msdoors = {ui=ui, sm=sm, url=H.URLS.MSDOORS, label="MS DOORS", icon="§",
+        run = function() H.doInject(sm, H.URLS.MSDOORS, "MS Doors") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.msdoors.run)
+end
+
+-- TOOLS
+do
+    local ui = H.makeTile(H.pages.TOOLS, 1, "◇", "DEX", "> click to inject", "dex")
+    local sm = H.makeSM(ui, "DEX", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.dex = {ui=ui, sm=sm, url=H.URLS.DEX, label="DEX", icon="◇",
+        run = function() H.doInject(sm, H.URLS.DEX, "Dex") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.dex.run)
+end
+do
+    local ui = H.makeTile(H.pages.TOOLS, 2, "◐", "HYDROXIDE", "> click to inject", "hydro")
+    local sm = H.makeSM(ui, "HYDROXIDE", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.hydro = {ui=ui, sm=sm, url=H.URLS.HYDROXIDE, label="HYDROXIDE", icon="◐",
+        run = function() H.doInject(sm, H.URLS.HYDROXIDE, "Hydroxide") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.hydro.run)
+end
+do
+    local ui = H.makeTile(H.pages.TOOLS, 3, "▶", "CMD-X", "> click to inject", "cmdx")
+    local sm = H.makeSM(ui, "CMD-X", "> click to inject", "> loading...", "> active", "> fail")
+    H.builtin.cmdx = {ui=ui, sm=sm, url=H.URLS.CMDX, label="CMD-X", icon="▶",
+        run = function() H.doInject(sm, H.URLS.CMDX, "CMD-X") end}
+    ui.button.MouseButton1Click:Connect(H.builtin.cmdx.run)
+end
+
+-- UTILITY
+do
+    local ui = H.makeTile(H.pages.UTILITY, 1, "↻", "REJOIN", "> same server", "rejoin")
+    local sm = H.makeSM(ui, "REJOIN", "> same server", "> rejoining...", "> done", "> fail")
+    local function run()
+        if sm.get() == H.S.L then return end
+        sm.loading()
+        task.spawn(function()
+            local ok, err = pcall(function() H.Tp:TeleportToPlaceInstance(game.PlaceId, game.JobId, H.LP) end)
+            if ok then sm.loaded() else warn(tostring(err)); sm.error()
+                task.wait(2); if sm.get() == H.S.E then sm.ready() end end
+        end)
+    end
+    H.builtin.rejoin = {ui=ui, sm=sm, label="REJOIN", icon="↻", run=run}
+    ui.button.MouseButton1Click:Connect(run)
+end
+do
+    local ui = H.makeTile(H.pages.UTILITY, 2, "⇄", "SERVER HOP", "> find new server", "hop")
+    local sm = H.makeSM(ui, "SERVER HOP", "> find new server", "> searching...", "> joined", "> fail")
+    local function run()
+        if sm.get() == H.S.L then return end
+        sm.loading()
+        task.spawn(function()
+            local ok, err = pcall(function()
+                local u = "https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"
+                local raw = game:HttpGet(u)
+                local d = H.Ht:JSONDecode(raw)
+                local lst = d and d.data or {}
+                local cs = {}
+                for _, sv in ipairs(lst) do
+                    if sv.id ~= game.JobId and sv.playing < sv.maxPlayers then
+                        table.insert(cs, sv.id)
+                    end
+                end
+                if #cs == 0 then error("no servers") end
+                H.Tp:TeleportToPlaceInstance(game.PlaceId, cs[math.random(1,#cs)], H.LP)
+            end)
+            if ok then sm.loaded() else warn(tostring(err)); sm.error()
+                task.wait(3); if sm.get() == H.S.E then sm.ready() end end
+        end)
+    end
+    H.builtin.hop = {ui=ui, sm=sm, label="SERVER HOP", icon="⇄", run=run}
+    ui.button.MouseButton1Click:Connect(run)
+end
+H.antiAfkOn = false
+H.antiAfkConn = nil
+do
+    local ui = H.makeTile(H.pages.UTILITY, 3, "☯", "ANTI-AFK", "> toggle", "antiafk")
+    local function run()
+        H.antiAfkOn = not H.antiAfkOn
+        if H.antiAfkOn then
+            ui.btnText.Text = "ANTI-AFK: ON"
+            ui.g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,T.ok), ColorSequenceKeypoint.new(1,Color3.fromRGB(20,80,45))})
+            ui.o.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,T.okHi), ColorSequenceKeypoint.new(1,T.ok)})
+            ui.hint.Text = "> running"; ui.hint.TextColor3 = T.ok
+            H.antiAfkConn = H.LP.Idled:Connect(function()
+                pcall(function() H.VU:CaptureController(); H.VU:ClickButton2(Vector2.new()) end)
+            end)
+        else
+            ui.btnText.Text = "ANTI-AFK"
+            ui.g.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,T.accent), ColorSequenceKeypoint.new(1,T.aDeep)})
+            ui.o.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,T.aHi), ColorSequenceKeypoint.new(1,T.emberHi)})
+            ui.hint.Text = "> toggle"; ui.hint.TextColor3 = T.t2
+            if H.antiAfkConn then H.antiAfkConn:Disconnect(); H.antiAfkConn = nil end
+        end
+    end
+    H.builtin.antiafk = {ui=ui, sm=nil, label="ANTI-AFK", icon="☯", run=run}
+    ui.button.MouseButton1Click:Connect(run)
+end
+
+-- ============================================================
+-- CUSTOM + HISTORY
+-- ============================================================
+H.urlInput = nil
+H.statusLbl = nil
+do
+    local wrap = Instance.new("Frame")
+    wrap.Size = UDim2.new(1,-40,1,-8); wrap.Position = UDim2.new(0,20,0,4)
+    wrap.BackgroundTransparency = 1; wrap.ZIndex = 8; wrap.Parent = H.pages.CUSTOM
+
+    local ci = Instance.new("TextLabel")
+    ci.Size = UDim2.new(1,0,0,18); ci.BackgroundTransparency = 1
+    ci.Text = "PASTE SCRIPT URL"; ci.TextColor3 = T.t2
+    ci.Font = H.FD; ci.TextSize = 11; ci.TextXAlignment = Enum.TextXAlignment.Left
+    ci.ZIndex = 9; ci.Parent = wrap
+
+    local ub = Instance.new("Frame")
+    ub.Size = UDim2.new(1,0,0,42); ub.Position = UDim2.new(0,0,0,22)
+    ub.BackgroundColor3 = T.s2; ub.BackgroundTransparency = 0.3
+    ub.BorderSizePixel = 0; ub.ZIndex = 8; ub.Parent = wrap
+    H.corner(ub, 10); local ubs = H.stroke(ub, T.accent, 1, 0.55)
+
+    local up = Instance.new("TextLabel")
+    up.Size = UDim2.new(0,26,1,0); up.Position = UDim2.new(0,12,0,0)
+    up.BackgroundTransparency = 1; up.Text = ">"
+    up.TextColor3 = T.aHi; up.Font = H.FD; up.TextSize = 14
+    up.ZIndex = 9; up.Parent = ub
+    H.onTheme(function() ubs.Color = T.accent; up.TextColor3 = T.aHi end)
+
+    local ui = Instance.new("TextBox")
+    ui.Size = UDim2.new(1,-40,1,0); ui.Position = UDim2.new(0,38,0,0)
+    ui.BackgroundTransparency = 1; ui.Text = ""
+    ui.PlaceholderText = "https://...script.lua"; ui.PlaceholderColor3 = T.t3
+    ui.TextColor3 = T.t0; ui.Font = H.FD; ui.TextSize = 11
+    ui.TextXAlignment = Enum.TextXAlignment.Left
+    ui.ClearTextOnFocus = false; ui.ZIndex = 9; ui.Parent = ub
+    H.urlInput = ui
+
+    local lb = Instance.new("TextButton")
+    lb.Size = UDim2.new(1,0,0,44); lb.Position = UDim2.new(0,0,0,72)
+    lb.BackgroundColor3 = T.accent; lb.BorderSizePixel = 0
+    lb.Text = "INJECT CUSTOM SCRIPT"; lb.TextColor3 = Color3.new(1,1,1)
+    lb.Font = H.FD; lb.TextSize = 14; lb.AutoButtonColor = false
+    lb.ClipsDescendants = true; lb.ZIndex = 9; lb.Parent = wrap
+    H.corner(lb, 10); local lg = H.grad(lb, {T.accent, T.aDeep}, 135)
+    H.stroke(lb, Color3.new(1,1,1), 1, 0.75)
+    H.onTheme(function()
+        lg.Color = ColorSequence.new({ColorSequenceKeypoint.new(0,T.accent), ColorSequenceKeypoint.new(1,T.aDeep)})
+    end)
+
+    local sl = Instance.new("TextLabel")
+    sl.Size = UDim2.new(1,0,0,16); sl.Position = UDim2.new(0,0,0,120)
+    sl.BackgroundTransparency = 1; sl.Text = ""
+    sl.TextColor3 = T.t2; sl.Font = H.FD; sl.TextSize = 11
+    sl.TextXAlignment = Enum.TextXAlignment.Left; sl.ZIndex = 9; sl.Parent = wrap
+    H.statusLbl = sl
+
+    local hl = Instance.new("TextLabel")
+    hl.Size = UDim2.new(1,0,0,16); hl.Position = UDim2.new(0,0,0,142)
+    hl.BackgroundTransparency = 1; hl.Text = "RECENT INJECTS"
+    hl.TextColor3 = T.t3; hl.Font = H.FD; hl.TextSize = 10
+    hl.TextXAlignment = Enum.TextXAlignment.Left; hl.ZIndex = 9; hl.Parent = wrap
+
+    local hs = Instance.new("ScrollingFrame")
+    hs.Size = UDim2.new(1,0,0,150); hs.Position = UDim2.new(0,0,0,160)
+    hs.BackgroundColor3 = T.s0; hs.BackgroundTransparency = 0.4
+    hs.BorderSizePixel = 0; hs.ScrollBarThickness = 3
+    hs.ScrollBarImageColor3 = T.accent; hs.CanvasSize = UDim2.new(0,0,0,0)
+    hs.ZIndex = 8; hs.Parent = wrap; H.corner(hs, 8)
+    H.onTheme(function() hs.ScrollBarImageColor3 = T.accent end)
+    H.histScroll = hs
+
+    local he = Instance.new("TextLabel")
+    he.Size = UDim2.new(1,0,0,30); he.Position = UDim2.new(0,0,0,8)
+    he.BackgroundTransparency = 1; he.Text = "> no history yet"
+    he.TextColor3 = T.t3; he.Font = H.FD; he.TextSize = 11
+    he.ZIndex = 9; he.Parent = hs
+    H.histEmpty = he
+
+    H.saveHistory = function() H.writeJ(H.F_HIST, {items = H.history}) end
+    H.renderHistory = function()
+        for _, c in ipairs(hs:GetChildren()) do if c ~= he then c:Destroy() end end
+        if #H.history == 0 then
+            he.Visible = true; hs.CanvasSize = UDim2.new(0,0,0,40); return
+        end
+        he.Visible = false
+        local y = 4
+        for i, e in ipairs(H.history) do
+            local row = Instance.new("TextButton")
+            row.Size = UDim2.new(1,-8,0,30); row.Position = UDim2.new(0,4,0,y)
+            row.BackgroundColor3 = T.s2; row.BackgroundTransparency = 0.2
+            row.BorderSizePixel = 0; row.Text = ""; row.AutoButtonColor = false
+            row.ZIndex = 9; row.Parent = hs; H.corner(row, 6)
+
+            local d = Instance.new("TextLabel")
+            d.Size = UDim2.new(0,16,1,0); d.Position = UDim2.new(0,6,0,0)
+            d.BackgroundTransparency = 1
+            d.Text = e.ok and "●" or "×"
+            d.TextColor3 = e.ok and T.ok or T.danger
+            d.Font = H.FD; d.TextSize = 14; d.ZIndex = 10; d.Parent = row
+
+            local ul = Instance.new("TextLabel")
+            ul.Size = UDim2.new(1,-90,1,0); ul.Position = UDim2.new(0,26,0,0)
+            ul.BackgroundTransparency = 1; ul.Text = e.url:sub(1,60)
+            ul.TextColor3 = T.t1; ul.Font = H.FD; ul.TextSize = 10
+            ul.TextXAlignment = Enum.TextXAlignment.Left
+            ul.TextTruncate = Enum.TextTruncate.AtEnd; ul.ZIndex = 10; ul.Parent = row
+
+            local db = Instance.new("TextButton")
+            db.Size = UDim2.new(0,22,1,-6); db.Position = UDim2.new(1,-26,0,3)
+            db.BackgroundColor3 = T.s3; db.BackgroundTransparency = 0.3
+            db.BorderSizePixel = 0; db.Text = "×"; db.TextColor3 = T.t2
+            db.Font = H.FD; db.TextSize = 14; db.AutoButtonColor = false
+            db.ZIndex = 11; db.Parent = row; H.corner(db, 4)
+            db.MouseEnter:Connect(function() db.TextColor3 = T.danger end)
+            db.MouseLeave:Connect(function() db.TextColor3 = T.t2 end)
+            db.MouseButton1Click:Connect(function()
+                table.remove(H.history, i); H.saveHistory(); H.renderHistory()
+            end)
+
+            row.MouseButton1Click:Connect(function()
+                ui.Text = e.url
+                task.spawn(function()
+                    sl.Text = "> re-injecting..."; sl.TextColor3 = T.warn
+                    local ok, err = pcall(function() loadstring(H.fetch(ui.Text))() end)
+                    if ok then sl.Text = "> injected"; sl.TextColor3 = T.ok
+                    else sl.Text = "> fail: "..tostring(err):sub(1,40); sl.TextColor3 = T.danger end
+                end)
+            end)
+            y = y + 34
+        end
+        hs.CanvasSize = UDim2.new(0,0,0,y+4)
+    end
+
+    lb.MouseButton1Click:Connect(function()
+        local u = ui.Text
+        if u == "" or not u:match("^https?://") then
+            sl.Text = "> invalid URL"; sl.TextColor3 = T.danger; return
+        end
+        sl.Text = "> injecting..."; sl.TextColor3 = T.warn
+        task.spawn(function()
+            local ok, err = pcall(function() loadstring(H.fetch(u))() end)
+            if ok then
+                sl.Text = "> success"; sl.TextColor3 = T.ok
+                for i, e in ipairs(H.history) do if e.url == u then table.remove(H.history, i); break end end
+                table.insert(H.history, 1, {url = u, ok = true})
+                while #H.history > 20 do table.remove(H.history) end
+                H.saveHistory(); H.renderHistory()
+            else
+                sl.Text = "> fail: "..tostring(err):sub(1,40); sl.TextColor3 = T.danger
+                for i, e in ipairs(H.history) do if e.url == u then table.remove(H.history, i); break end end
+                table.insert(H.history, 1, {url = u, ok = false})
+                while #H.history > 20 do table.remove(H.history) end
+                H.saveHistory(); H.renderHistory()
+            end
+        end)
+    end)
+end
+
+-- ============================================================
+-- USER
+-- ============================================================
+H.dragState = nil
+do
+    local ub = Instance.new("TextButton")
+    ub.Size = UDim2.new(1,-40,0,42); ub.Position = UDim2.new(0,20,0,4)
+    ub.BackgroundColor3 = T.s2; ub.BackgroundTransparency = 0.3
+    ub.BorderSizePixel = 0; ub.Text = "✚  ADD NEW SCRIPT"
+    ub.TextColor3 = T.aHi; ub.Font = H.FD; ub.TextSize = 14
+    ub.AutoButtonColor = false; ub.ZIndex = 9; ub.Parent = H.pages.USER
+    H.corner(ub, 10); local ubs = H.stroke(ub, T.accent, 1.2, 0.5)
+    H.onTheme(function() ubs.Color = T.accent; ub.TextColor3 = T.aHi end)
+
+    ub.MouseEnter:Connect(function()
+        H.tw(ub, {BackgroundTransparency=0.1}, 0.15); H.tw(ubs, {Transparency=0.1}, 0.15)
+    end)
+    ub.MouseLeave:Connect(function()
+        H.tw(ub, {BackgroundTransparency=0.3}, 0.15); H.tw(ubs, {Transparency=0.5}, 0.15)
+    end)
+
+    local us = Instance.new("ScrollingFrame")
+    us.Size = UDim2.new(1,0,1,-56); us.Position = UDim2.new(0,0,0,52)
+    us.BackgroundTransparency = 1; us.BorderSizePixel = 0
+    us.ScrollBarThickness = 4; us.ScrollBarImageColor3 = T.accent
+    us.CanvasSize = UDim2.new(0,0,0,0); us.ZIndex = 8; us.Parent = H.pages.USER
+    H.onTheme(function() us.ScrollBarImageColor3 = T.accent end)
+    H.userScroll = us
+
+    local ue = Instance.new("TextLabel")
+    ue.Size = UDim2.new(1,0,0,40); ue.Position = UDim2.new(0,0,0,20)
+    ue.BackgroundTransparency = 1
+    ue.Text = "✚ no custom scripts yet — tap ADD NEW SCRIPT"
+    ue.TextColor3 = T.t3; ue.Font = H.FD; ue.TextSize = 12
+    ue.ZIndex = 9; ue.Parent = us
+    H.userEmpty = ue
+
+    H.saveUserScripts = function()
+        local out = {}
+        for _, e in ipairs(H.userScripts) do
+            table.insert(out, {name = e.name, icon = e.icon, url = e.url})
+        end
+        H.writeJ(H.F_USER, {scripts = out})
+    end
+
+    H.deleteUserScript = function(idx)
+        local e = H.userScripts[idx]
+        if not e then return end
+        if e.ui and e.ui.slot then e.ui.slot:Destroy() end
+        H.autoloadSet[e.url] = nil
+        H.saveAutoload()
+        table.remove(H.userScripts, idx)
+        H.saveUserScripts(); H.renderUserScripts(); H.renderAutoload()
+    end
+
+    H.renderUserScripts = function()
+        for _, c in ipairs(us:GetChildren()) do if c ~= ue then c:Destroy() end end
+        if #H.userScripts == 0 then
+            ue.Visible = true; us.CanvasSize = UDim2.new(0,0,0,80); return
+        end
+        ue.Visible = false
+
+        local cols, pad, gap = 3, 20, 12
+        local tW, tH, rG = 213, 110, 12
+
+        for i, e in ipairs(H.userScripts) do
+            local col = ((i-1) % cols) + 1
+            local row = math.floor((i-1) / cols) + 1
+            local x = pad + (col-1) * (tW + gap)
+            local y = pad + (row-1) * (tH + rG + 18)
+
+            local slot = Instance.new("Frame")
+            slot.Name = "uSlot"; slot.Size = UDim2.new(0, tW, 0, tH + 18)
+            slot.Position = UDim2.new(0, x, 0, y)
+            slot.BackgroundTransparency = 1; slot.ZIndex = 8; slot.Parent = us
+
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1,0,0,tH); btn.BackgroundColor3 = Color3.new(1,1,1)
+            btn.BorderSizePixel = 0; btn.Text = ""; btn.AutoButtonColor = false
+            btn.ClipsDescendants = true; btn.ZIndex = 8; btn.Parent = slot
+            H.corner(btn, 14)
+            local g = H.grad(btn, {T.accent, T.aDeep}, 135)
+            local sk = H.stroke(btn, Color3.new(1,1,1), 1, 0.75)
+
+            local ov = Instance.new("Frame")
+            ov.Size = UDim2.new(1,0,1,0); ov.BackgroundColor3 = Color3.new(1,1,1)
+            ov.BackgroundTransparency = 1; ov.BorderSizePixel = 0
+            ov.ZIndex = 10; ov.Parent = btn; H.corner(ov, 14)
+            local og = H.grad(ov, {T.aHi, T.emberHi}, 135)
+
+            local ct = Instance.new("Frame")
+            ct.Size = UDim2.new(1,0,1,0); ct.BackgroundTransparency = 1
+            ct.ZIndex = 12; ct.Parent = btn
+
+            local ly = Instance.new("UIListLayout")
+            ly.FillDirection = Enum.FillDirection.Horizontal
+            ly.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            ly.VerticalAlignment = Enum.VerticalAlignment.Center
+            ly.Padding = UDim.new(0,12); ly.Parent = ct
+
+            local il = Instance.new("TextLabel")
+            il.Size = UDim2.new(0,34,0,34); il.BackgroundTransparency = 1
+            il.Text = e.icon or "★"; il.TextColor3 = Color3.new(1,1,1)
+            il.Font = H.FD; il.TextSize = 26; il.LayoutOrder = 1; il.ZIndex = 13; il.Parent = ct
+
+            local nl = Instance.new("TextLabel")
+            nl.AutomaticSize = Enum.AutomaticSize.X; nl.Size = UDim2.new(0,0,1,0)
+            nl.BackgroundTransparency = 1; nl.Text = e.name or "CUSTOM"
+            nl.TextColor3 = Color3.new(1,1,1); nl.Font = H.FD
+            nl.TextSize = 16; nl.LayoutOrder = 2; nl.ZIndex = 13; nl.Parent = ct
+
+            local hl = Instance.new("TextLabel")
+            hl.Size = UDim2.new(1,0,0,16); hl.Position = UDim2.new(0,0,0,tH+2)
+            hl.BackgroundTransparency = 1; hl.Text = "> drag to reorder · click to inject"
+            hl.TextColor3 = T.t2; hl.Font = H.FB; hl.TextSize = 10
+            hl.TextXAlignment = Enum.TextXAlignment.Center
+            hl.TextTruncate = Enum.TextTruncate.AtEnd; hl.ZIndex = 8; hl.Parent = slot
+
+            local db = Instance.new("TextButton")
+            db.Size = UDim2.new(0,24,0,24); db.Position = UDim2.new(1,-28,0,6)
+            db.BackgroundColor3 = T.s0; db.BackgroundTransparency = 0.25
+            db.BorderSizePixel = 0; db.Text = "×"; db.TextColor3 = T.t2
+            db.Font = H.FD; db.TextSize = 16; db.AutoButtonColor = false
+            db.ZIndex = 15; db.Parent = btn; H.corner(db, 6)
+            db.MouseEnter:Connect(function() H.tw(db, {BackgroundTransparency=0, TextColor3=T.danger}, 0.15) end)
+            db.MouseLeave:Connect(function() H.tw(db, {BackgroundTransparency=0.25, TextColor3=T.t2}, 0.15) end)
+            db.MouseButton1Click:Connect(function() H.deleteUserScript(i) end)
+
+            local sm = H.makeSM({g=g, o=og, sk=sk, t=nl, h=hl},
+                e.name or "CUSTOM", "> click to inject", "> loading...", "> active", "> fail")
+
+            e.ui = {slot=slot, button=btn, g=g, sk=sk, o=og}
+            e.sm = sm
+
+            btn.MouseEnter:Connect(function()
+                if H.dragState then return end
+                H.tw(ov, {BackgroundTransparency=0}, 0.25); H.tw(sk, {Transparency=0.3}, 0.25)
+            end)
+            btn.MouseLeave:Connect(function()
+                H.tw(ov, {BackgroundTransparency=1}, 0.25); H.tw(sk, {Transparency=0.75}, 0.25)
+            end)
+
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1
+                or input.UserInputType == Enum.UserInputType.Touch then
+                    H.dragState = {
+                        idx = i, slot = slot, btn = btn,
+                        startMouse = H.UI:GetMouseLocation(),
+                        startPos = slot.Position, moved = false,
+                    }
+                end
+            end)
+
+            btn.MouseButton1Click:Connect(function()
+                if H.dragState and H.dragState.moved then return end
+                H.doInject(sm, e.url, e.name or "Custom")
+            end)
+
+            table.insert(H.registry, {ui = {slot = slot}, label = e.name or "CUSTOM", page = us})
+        end
+        us.CanvasSize = UDim2.new(0,0,0, 20 + math.ceil(#H.userScripts / 3) * (110 + 12 + 18) + 20)
+    end
+
+    H.loadUserScripts = function()
+        local d = H.readJ(H.F_USER, nil)
+        if type(d) == "table" and type(d.scripts) == "table" then
+            for _, e in ipairs(d.scripts) do
+                if type(e) == "table" and type(e.url) == "string" then
+                    table.insert(H.userScripts, {name=tostring(e.name or "CUSTOM"), icon=tostring(e.icon or "★"), url=tostring(e.url)})
+                end
+            end
+        end
+        H.renderUserScripts()
+    end
+end
+
+-- drag loop
+H.RS.RenderStepped:Connect(function()
+    local ds = H.dragState
+    if not ds then return end
+    local mp = H.UI:GetMouseLocation()
+    local dx = mp.X - ds.startMouse.X
+    local dy = mp.Y - ds.startMouse.Y
+    if math.abs(dx) > 4 or math.abs(dy) > 4 then ds.moved = true end
+    if ds.moved then
+        ds.slot.ZIndex = 300
+        ds.slot.Position = UDim2.new(0, ds.startPos.X.Offset + dx, 0, ds.startPos.Y.Offset + dy)
+        ds.btn.BackgroundTransparency = 0.25
+    end
+end)
+
+H.UI.InputEnded:Connect(function(input)
+    if input.UserInputType ~= Enum.UserInputType.MouseButton1
+    and input.UserInputType ~= Enum.UserInputType.Touch then return end
+    local ds = H.dragState
+    if not ds then return end
+    local wasMoved = ds.moved
+    local srcIdx = ds.idx
+    ds.btn.BackgroundTransparency = 0; ds.slot.ZIndex = 8
+    if wasMoved then
+        local mouse = H.UI:GetMouseLocation()
+        local sa = H.userScroll.AbsolutePosition
+        local sy = H.userScroll.CanvasPosition.Y or 0
+        local relX = mouse.X - sa.X
+        local relY = mouse.Y - sa.Y + sy
+        local pad, gap, tW, tH, rG = 20, 12, 213, 110, 12
+        local col = math.clamp(math.floor((relX-pad)/(tW+gap))+1, 1, 3)
+        local row = math.max(math.floor((relY-pad)/(tH+rG+18))+1, 1)
+        local target = math.clamp((row-1)*3 + col, 1, #H.userScripts)
+        if target ~= srcIdx then
+            local e = table.remove(H.userScripts, srcIdx)
+            table.insert(H.userScripts, target, e)
+            H.saveUserScripts()
+        end
+    end
+    H.dragState = nil
+    H.renderUserScripts()
+end)
+
+-- ADD MODAL
+do
+    local am = Instance.new("Frame")
+    am.Size = UDim2.new(1,0,1,0); am.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    am.BackgroundTransparency = 0.5; am.BorderSizePixel = 0
+    am.Visible = false; am.ZIndex = 60; am.Parent = H.main
+    H.addModal = am
+
+    local box = Instance.new("Frame")
+    box.AnchorPoint = Vector2.new(0.5,0.5); box.Position = UDim2.new(0.5,0,0.5,0)
+    box.Size = UDim2.new(0,400,0,320); box.BackgroundColor3 = T.s1
+    box.BackgroundTransparency = 0.05; box.BorderSizePixel = 0
+    box.ZIndex = 61; box.Parent = am; H.corner(box, 14)
+    local ms = H.stroke(box, T.accent, 1.5, 0.3)
+    H.onTheme(function() ms.Color = T.accent end)
+
+    local mt = Instance.new("TextLabel")
+    mt.Size = UDim2.new(1,0,0,30); mt.Position = UDim2.new(0,0,0,14)
+    mt.BackgroundTransparency = 1; mt.Text = "NEW SCRIPT"
+    mt.TextColor3 = T.aHi; mt.Font = H.FD; mt.TextSize = 18
+    mt.ZIndex = 62; mt.Parent = box
+    H.onTheme(function() mt.TextColor3 = T.aHi end)
+
+    local function field(y, lbl, ph, ml)
+        local l = Instance.new("TextLabel")
+        l.Size = UDim2.new(1,-40,0,16); l.Position = UDim2.new(0,20,0,y)
+        l.BackgroundTransparency = 1; l.Text = lbl; l.TextColor3 = T.t2
+        l.Font = H.FD; l.TextSize = 11; l.TextXAlignment = Enum.TextXAlignment.Left
+        l.ZIndex = 62; l.Parent = box
+
+        local bx = Instance.new("Frame")
+        bx.Size = UDim2.new(1,-40,0,36); bx.Position = UDim2.new(0,20,0,y+18)
+        bx.BackgroundColor3 = T.s2; bx.BackgroundTransparency = 0.3
+        bx.BorderSizePixel = 0; bx.ZIndex = 62; bx.Parent = box
+        H.corner(bx, 8); local st = H.stroke(bx, T.accent, 1, 0.6)
+        H.onTheme(function() st.Color = T.accent end)
+
+        local i = Instance.new("TextBox")
+        i.Size = UDim2.new(1,-20,1,0); i.Position = UDim2.new(0,10,0,0)
+        i.BackgroundTransparency = 1; i.Text = ""
+        i.PlaceholderText = ph; i.PlaceholderColor3 = T.t3
+        i.TextColor3 = T.t0; i.Font = H.FD; i.TextSize = 12
+        i.TextXAlignment = Enum.TextXAlignment.Left
+        i.ClearTextOnFocus = false; i.ZIndex = 63; i.Parent = bx
+        if ml then
+            i:GetPropertyChangedSignal("Text"):Connect(function()
+                if #i.Text > ml then i.Text = i.Text:sub(1,ml) end
+            end)
+        end
+        return i
+    end
+
+    local nI = field(50, "NAME", "My Script", 32)
+    local iI = field(126, "ICON", "★", 4)
+    local uI = field(202, "URL", "https://...script.lua")
+
+    local cb = Instance.new("TextButton")
+    cb.Size = UDim2.new(0,150,0,38); cb.Position = UDim2.new(0,20,1,-52)
+    cb.BackgroundColor3 = T.s3; cb.BackgroundTransparency = 0.3
+    cb.BorderSizePixel = 0; cb.Text = "CANCEL"; cb.TextColor3 = T.t1
+    cb.Font = H.FD; cb.TextSize = 13; cb.AutoButtonColor = false
+    cb.ZIndex = 62; cb.Parent = box; H.corner(cb, 8)
+
+    local ok = Instance.new("TextButton")
+    ok.Size = UDim2.new(0,190,0,38); ok.Position = UDim2.new(1,-210,1,-52)
+    ok.BackgroundColor3 = T.accent; ok.BorderSizePixel = 0
+    ok.Text = "ADD SCRIPT"; ok.TextColor3 = Color3.new(1,1,1)
+    ok.Font = H.FD; ok.TextSize = 13; ok.AutoButtonColor = false
+    ok.ZIndex = 62; ok.Parent = box; H.corner(ok, 8)
+    H.onTheme(function() ok.BackgroundColor3 = T.accent end)
+
+    cb.MouseButton1Click:Connect(function()
+        am.Visible = false; nI.Text = ""; iI.Text = ""; uI.Text = ""
+    end)
+    ok.MouseButton1Click:Connect(function()
+        local n, ic, u = nI.Text, iI.Text, uI.Text
+        if n == "" then n = "CUSTOM" end
+        if ic == "" then ic = "★" end
+        if u == "" or not u:match("^https?://") then
+            uI.TextColor3 = T.danger; task.delay(0.6, function() uI.TextColor3 = T.t0 end); return
+        end
+        table.insert(H.userScripts, {name=n, icon=ic, url=u})
+        H.saveUserScripts(); H.renderUserScripts(); H.renderAutoload()
+        am.Visible = false; nI.Text = ""; iI.Text = ""; uI.Text = ""
+    end)
+
+    H.userAddBtn = Instance.new("TextButton")
+    H.userAddBtn.Size = UDim2.new(1,-40,0,42); H.userAddBtn.Position = UDim2.new(0,20,0,4)
+    H.userAddBtn.BackgroundColor3 = T.s2; H.userAddBtn.BackgroundTransparency = 0.3
+    H.userAddBtn.BorderSizePixel = 0; H.userAddBtn.Text = "✚  ADD NEW SCRIPT"
+    H.userAddBtn.TextColor3 = T.aHi; H.userAddBtn.Font = H.FD; H.userAddBtn.TextSize = 14
+    H.userAddBtn.AutoButtonColor = false; H.userAddBtn.ZIndex = 9; H.userAddBtn.Parent = H.pages.USER
+    H.corner(H.userAddBtn, 10); local ubs = H.stroke(H.userAddBtn, T.accent, 1.2, 0.5)
+    H.onTheme(function() ubs.Color = T.accent; H.userAddBtn.TextColor3 = T.aHi end)
+
+    H.userAddBtn.MouseEnter:Connect(function()
+        H.tw(H.userAddBtn, {BackgroundTransparency=0.1}, 0.15); H.tw(ubs, {Transparency=0.1}, 0.15)
+    end)
+    H.userAddBtn.MouseLeave:Connect(function()
+        H.tw(H.userAddBtn, {BackgroundTransparency=0.3}, 0.15); H.tw(ubs, {Transparency=0.5}, 0.15)
+    end)
+    H.userAddBtn.MouseButton1Click:Connect(function()
+        am.Visible = true
+        task.delay(0.1, function() pcall(function() nI:CaptureFocus() end) end)
+    end)
+end
+
+-- ============================================================
+-- AUTO
+-- ============================================================
+do
+    local info = Instance.new("TextLabel")
+    info.Size = UDim2.new(1,-40,0,18); info.Position = UDim2.new(0,20,0,4)
+    info.BackgroundTransparency = 1
+    info.Text = "SELECT SCRIPTS TO RUN ON HUB START"
+    info.TextColor3 = T.t2; info.Font = H.FD; info.TextSize = 10
+    info.TextXAlignment = Enum.TextXAlignment.Left; info.ZIndex = 9; info.Parent = H.pages.AUTO
+
+    local scr = Instance.new("ScrollingFrame")
+    scr.Size = UDim2.new(1,-40,1,-110); scr.Position = UDim2.new(0,20,0,26)
+    scr.BackgroundColor3 = T.s0; scr.BackgroundTransparency = 0.4
+    scr.BorderSizePixel = 0; scr.ScrollBarThickness = 3
+    scr.ScrollBarImageColor3 = T.accent; scr.CanvasSize = UDim2.new(0,0,0,0)
+    scr.ZIndex = 8; scr.Parent = H.pages.AUTO; H.corner(scr, 8)
+    H.onTheme(function() scr.ScrollBarImageColor3 = T.accent end)
+    H.autoScroll = scr
+
+    local rb = Instance.new("TextButton")
+    rb.Size = UDim2.new(1,-40,0,34); rb.Position = UDim2.new(0,20,1,-76)
+    rb.BackgroundColor3 = T.accent; rb.BorderSizePixel = 0
+    rb.Text = "▶ RUN SELECTED NOW"; rb.TextColor3 = Color3.new(1,1,1)
+    rb.Font = H.FD; rb.TextSize = 13; rb.AutoButtonColor = false
+    rb.ZIndex = 9; rb.Parent = H.pages.AUTO; H.corner(rb, 8)
+    H.onTheme(function() rb.BackgroundColor3 = T.accent end)
+    rb.MouseEnter:Connect(function() H.tw(rb, {BackgroundTransparency=0.1}, 0.15) end)
+    rb.MouseLeave:Connect(function() H.tw(rb, {BackgroundTransparency=0}, 0.15) end)
+
+    local clr = Instance.new("TextButton")
+    clr.Size = UDim2.new(1,-40,0,30); clr.Position = UDim2.new(0,20,1,-38)
+    clr.BackgroundColor3 = T.s3; clr.BackgroundTransparency = 0.3
+    clr.BorderSizePixel = 0; clr.Text = "CLEAR AUTOLOAD LIST"
+    clr.TextColor3 = T.t2; clr.Font = H.FD; clr.TextSize = 11
+    clr.AutoButtonColor = false; clr.ZIndex = 9; clr.Parent = H.pages.AUTO; H.corner(clr, 6)
+    clr.MouseEnter:Connect(function() H.tw(clr, {BackgroundTransparency=0, TextColor3=T.danger}, 0.15) end)
+    clr.MouseLeave:Connect(function() H.tw(clr, {BackgroundTransparency=0.3, TextColor3=T.t2}, 0.15) end)
+
+    H.saveAutoload = function()
+        local out = {}
+        for u in pairs(H.autoloadSet) do table.insert(out, u) end
+        H.writeJ(H.F_AUTO, {urls = out})
+    end
+
+    H.renderAutoload = function()
+        for _, c in ipairs(scr:GetChildren()) do c:Destroy() end
+        local y = 4
+        local h1 = Instance.new("TextLabel")
+        h1.Size = UDim2.new(1,-8,0,16); h1.Position = UDim2.new(0,8,0,y)
+        h1.BackgroundTransparency = 1; h1.Text = "BUILT-IN"
+        h1.TextColor3 = T.aHi; h1.Font = H.FD; h1.TextSize = 10
+        h1.TextXAlignment = Enum.TextXAlignment.Left; h1.ZIndex = 10; h1.Parent = scr
+        H.onTheme(function() h1.TextColor3 = T.aHi end)
+        y = y + 22
+
+        local function row(ico, lbl, url, isUser)
+            local r = Instance.new("Frame")
+            r.Size = UDim2.new(1,-8,0,34); r.Position = UDim2.new(0,4,0,y)
+            r.BackgroundColor3 = T.s2; r.BackgroundTransparency = 0.2
+            r.BorderSizePixel = 0; r.ZIndex = 9; r.Parent = scr; H.corner(r, 6)
+
+            local ck = Instance.new("TextButton")
+            ck.Size = UDim2.new(0,24,0,24); ck.Position = UDim2.new(0,6,0,5)
+            ck.BackgroundColor3 = T.s0; ck.BackgroundTransparency = 0.3
+            ck.BorderSizePixel = 0
+            ck.Text = H.autoloadSet[url] and "✓" or ""
+            ck.TextColor3 = T.aHi; ck.Font = H.FD; ck.TextSize = 16
+            ck.AutoButtonColor = false; ck.ZIndex = 10; ck.Parent = r; H.corner(ck, 6)
+            H.onTheme(function() ck.TextColor3 = T.aHi end)
+
+            local ic = Instance.new("TextLabel")
+            ic.Size = UDim2.new(0,24,1,0); ic.Position = UDim2.new(0,36,0,0)
+            ic.BackgroundTransparency = 1; ic.Text = ico
+            ic.TextColor3 = Color3.new(1,1,1); ic.Font = H.FD
+            ic.TextSize = 16; ic.ZIndex = 10; ic.Parent = r
+
+            local nm = Instance.new("TextLabel")
+            nm.Size = UDim2.new(1,-160,1,0); nm.Position = UDim2.new(0,66,0,0)
+            nm.BackgroundTransparency = 1; nm.Text = lbl
+            nm.TextColor3 = T.t0; nm.Font = H.FD; nm.TextSize = 12
+            nm.TextXAlignment = Enum.TextXAlignment.Left
+            nm.TextTruncate = Enum.TextTruncate.AtEnd; nm.ZIndex = 10; nm.Parent = r
+
+            local tg = Instance.new("TextLabel")
+            tg.Size = UDim2.new(0,60,1,0); tg.Position = UDim2.new(1,-66,0,0)
+            tg.BackgroundTransparency = 1
+            tg.Text = isUser and "USER" or "BUILTIN"
+            tg.TextColor3 = isUser and T.emberHi or T.t3
+            tg.Font = H.FD; tg.TextSize = 9
+            tg.TextXAlignment = Enum.TextXAlignment.Right; tg.ZIndex = 10; tg.Parent = r
+
+            local function tog()
+                if H.autoloadSet[url] then H.autoloadSet[url] = nil; ck.Text = ""
+                else H.autoloadSet[url] = true; ck.Text = "✓" end
+                H.saveAutoload()
+            end
+            ck.MouseButton1Click:Connect(tog)
+            r.InputBegan:Connect(function(input)
+                if input.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+                local mp = H.UI:GetMouseLocation()
+                local cp = ck.AbsolutePosition; local cs = ck.AbsoluteSize
+                if mp.X < cp.X or mp.X > cp.X + cs.X or mp.Y < cp.Y or mp.Y > cp.Y + cs.Y then
+                    tog()
+                end
+            end)
+            r.Active = true
+            y = y + 38
+        end
+
+        for _, k in ipairs({"iy","fly","skin","abysall","cheesy","msdoors","dex","hydro","cmdx"}) do
+            local e = H.builtin[k]
+            if e then row(e.icon, e.label, e.url, false) end
+        end
+        y = y + 8
+        local h2 = Instance.new("TextLabel")
+        h2.Size = UDim2.new(1,-8,0,16); h2.Position = UDim2.new(0,8,0,y)
+        h2.BackgroundTransparency = 1; h2.Text = "YOUR SCRIPTS"
+        h2.TextColor3 = T.emberHi; h2.Font = H.FD; h2.TextSize = 10
+        h2.TextXAlignment = Enum.TextXAlignment.Left; h2.ZIndex = 10; h2.Parent = scr
+        H.onTheme(function() h2.TextColor3 = T.emberHi end)
+        y = y + 22
+
+        if #H.userScripts == 0 then
+            local emp = Instance.new("TextLabel")
+            emp.Size = UDim2.new(1,-8,0,24); emp.Position = UDim2.new(0,8,0,y)
+            emp.BackgroundTransparency = 1
+            emp.Text = "> no user scripts yet — add them in USER tab"
+            emp.TextColor3 = T.t3; emp.Font = H.FD; emp.TextSize = 10
+            emp.TextXAlignment = Enum.TextXAlignment.Left; emp.ZIndex = 10; emp.Parent = scr
+            y = y + 28
+        else
+            for _, e in ipairs(H.userScripts) do row(e.icon, e.name, e.url, true) end
+        end
+        scr.CanvasSize = UDim2.new(0,0,0,y+8)
+    end
+
+    clr.MouseButton1Click:Connect(function()
+        H.autoloadSet = {}; H.saveAutoload(); H.renderAutoload()
+    end)
+    rb.MouseButton1Click:Connect(function()
+        for url in pairs(H.autoloadSet) do
+            task.spawn(function()
+                local ok, err = pcall(function() loadstring(H.fetch(url))() end)
+                if not ok then warn("[A-90 autoload] "..tostring(err)) end
+            end)
+            task.wait(0.15)
+        end
+    end)
+end
+
+-- ============================================================
+-- FAVES
+-- ============================================================
+do
+    local fs = Instance.new("ScrollingFrame")
+    fs.Size = UDim2.new(1,-40,1,-8); fs.Position = UDim2.new(0,20,0,4)
+    fs.BackgroundTransparency = 1; fs.BorderSizePixel = 0
+    fs.ScrollBarThickness = 4; fs.ScrollBarImageColor3 = T.accent
+    fs.CanvasSize = UDim2.new(0,0,0,0); fs.ZIndex = 8; fs.Parent = H.pages.FAVES
+    H.onTheme(function() fs.ScrollBarImageColor3 = T.accent end)
+
+    local fe = Instance.new("TextLabel")
+    fe.Size = UDim2.new(1,0,0,40); fe.Position = UDim2.new(0,0,0,20)
+    fe.BackgroundTransparency = 1
+    fe.Text = "★ no favorites yet — tap the star on any tile"
+    fe.TextColor3 = T.t3; fe.Font = H.FD; fe.TextSize = 12
+    fe.ZIndex = 9; fe.Parent = fs
+
+    H.renderFaves = function()
+        for _, c in ipairs(fs:GetChildren()) do if c ~= fe then c:Destroy() end end
+        if #H.favOrder == 0 then
+            fe.Visible = true; fs.CanvasSize = UDim2.new(0,0,0,80); return
+        end
+        fe.Visible = false
+        local y = 0
+        for _, k in ipairs(H.favOrder) do
+            local e = H.builtin[k]
+            if e and H.favOn[k] then
+                local r = Instance.new("TextButton")
+                r.Size = UDim2.new(1,-8,0,40); r.Position = UDim2.new(0,4,0,y)
+                r.BackgroundColor3 = T.s3; r.BackgroundTransparency = 0.15
+                r.BorderSizePixel = 0; r.Text = ""; r.AutoButtonColor = false
+                r.ZIndex = 9; r.Parent = fs; H.corner(r, 8)
+                local rs = H.stroke(r, T.accent, 1, 0.6)
+                H.onTheme(function() rs.Color = T.accent end)
+
+                local st = Instance.new("TextLabel")
+                st.Size = UDim2.new(0,30,1,0); st.Position = UDim2.new(0,6,0,0)
+                st.BackgroundTransparency = 1; st.Text = "★"
+                st.TextColor3 = T.warn; st.Font = H.FD
+                st.TextSize = 16; st.ZIndex = 10; st.Parent = r
+
+                local nm = Instance.new("TextLabel")
+                nm.Size = UDim2.new(1,-90,1,0); nm.Position = UDim2.new(0,42,0,0)
+                nm.BackgroundTransparency = 1; nm.Text = e.label
+                nm.TextColor3 = T.t0; nm.Font = H.FD; nm.TextSize = 13
+                nm.TextXAlignment = Enum.TextXAlignment.Left; nm.ZIndex = 10; nm.Parent = r
+
+                local gb = Instance.new("TextButton")
+                gb.Size = UDim2.new(0,40,1,-8); gb.Position = UDim2.new(1,-46,0,4)
+                gb.BackgroundColor3 = T.accent; gb.BackgroundTransparency = 0.15
+                gb.BorderSizePixel = 0; gb.Text = "▶"; gb.TextColor3 = T.t0
+                gb.Font = H.FD; gb.TextSize = 14; gb.AutoButtonColor = false
+                gb.ZIndex = 10; gb.Parent = r; H.corner(gb, 6)
+                H.onTheme(function() gb.BackgroundColor3 = T.accent end)
+
+                gb.MouseButton1Click:Connect(function() if e.run then task.spawn(e.run) end end)
+                r.MouseButton1Click:Connect(function() if e.run then task.spawn(e.run) end end)
+                y = y + 46
+            end
+        end
+        fs.CanvasSize = UDim2.new(0,0,0,y+8)
+    end
+
+    H.saveFavorites = function() H.writeJ(H.F_FAV, {order = H.favOrder}) end
+    H.loadFavorites = function()
+        local d = H.readJ(H.F_FAV, nil)
+        if type(d) == "table" and type(d.order) == "table" then
+            for _, k in ipairs(d.order) do
+                if H.builtin[k] then
+                    H.favOn[k] = true
+                    table.insert(H.favOrder, k)
+                    if H.builtin[k].ui and H.builtin[k].ui.star then
+                        H.builtin[k].ui.star.Text = "★"
+                        H.builtin[k].ui.star.TextColor3 = T.warn
+                    end
+                end
+            end
+        end
+    end
+    H.toggleFavorite = function(k)
+        if not H.builtin[k] then return end
+        if H.favOn[k] then
+            H.favOn[k] = false
+            if H.builtin[k].ui.star then
+                H.builtin[k].ui.star.Text = "☆"
+                H.builtin[k].ui.star.TextColor3 = T.t2
+            end
+            for i, kk in ipairs(H.favOrder) do if kk == k then table.remove(H.favOrder, i); break end end
+        else
+            H.favOn[k] = true
+            if H.builtin[k].ui.star then
+                H.builtin[k].ui.star.Text = "★"
+                H.builtin[k].ui.star.TextColor3 = T.warn
+            end
+            table.insert(H.favOrder, k)
+        end
+        H.saveFavorites(); H.renderFaves()
+    end
+end
+
+-- ============================================================
+-- SETUP
+-- ============================================================
+H.themeButtons = {}
+do
+    local wrap = Instance.new("Frame")
+    wrap.Size = UDim2.new(1,-40,1,-8); wrap.Position = UDim2.new(0,20,0,4)
+    wrap.BackgroundTransparency = 1; wrap.ZIndex = 8; wrap.Parent = H.pages.SETUP
+
+    local tt = Instance.new("TextLabel")
+    tt.Size = UDim2.new(1,0,0,16); tt.BackgroundTransparency = 1
+    tt.Text = "THEME"; tt.TextColor3 = T.t2
+    tt.Font = H.FD; tt.TextSize = 10
+    tt.TextXAlignment = Enum.TextXAlignment.Left; tt.ZIndex = 9; tt.Parent = wrap
+
+    local tg = Instance.new("Frame")
+    tg.Size = UDim2.new(1,0,0,130); tg.Position = UDim2.new(0,0,0,20)
+    tg.BackgroundTransparency = 1; tg.ZIndex = 8; tg.Parent = wrap
+
+    for i, key in ipairs({ "red","blue","green","purple","gold","mono" }) do
+        local th = H.THEMES[key]
+        local col = ((i-1) % 3) + 1
+        local row = math.floor((i-1) / 3) + 1
+        local x = (col-1) * 216
+        local y = (row-1) * 62
+
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0,208,0,56); b.Position = UDim2.new(0,x,0,y)
+        b.BackgroundColor3 = T.s2; b.BackgroundTransparency = 0.3
+        b.BorderSizePixel = 0; b.Text = ""; b.AutoButtonColor = false
+        b.ZIndex = 9; b.Parent = tg; H.corner(b, 10)
+        local bs = H.stroke(b, th.accent, 1.5, 0.4)
+
+        local sw = Instance.new("Frame")
+        sw.Size = UDim2.new(0,54,0,36); sw.Position = UDim2.new(0,10,0,10)
+        sw.BackgroundColor3 = th.accent; sw.BorderSizePixel = 0
+        sw.ZIndex = 10; sw.Parent = b; H.corner(sw, 6)
+        H.grad(sw, {th.aHi, th.aDeep}, 135)
+
+        local nl = Instance.new("TextLabel")
+        nl.Size = UDim2.new(1,-80,1,0); nl.Position = UDim2.new(0,74,0,0)
+        nl.BackgroundTransparency = 1; nl.Text = th.name
+        nl.TextColor3 = T.t0; nl.Font = H.FD; nl.TextSize = 14
+        nl.TextXAlignment = Enum.TextXAlignment.Left; nl.ZIndex = 10; nl.Parent = b
+
+        local ck = Instance.new("TextLabel")
+        ck.Size = UDim2.new(0,20,1,0); ck.Position = UDim2.new(1,-26,0,0)
+        ck.BackgroundTransparency = 1; ck.Text = ""
+        ck.TextColor3 = th.aHi; ck.Font = H.FD; ck.TextSize = 18
+        ck.ZIndex = 10; ck.Parent = b
+
+        b.MouseEnter:Connect(function() H.tw(b, {BackgroundTransparency=0}, 0.15) end)
+        b.MouseLeave:Connect(function() H.tw(b, {BackgroundTransparency=0.3}, 0.15) end)
+
+        b.MouseButton1Click:Connect(function()
+            for _, btn in pairs(H.themeButtons) do btn.check.Text = "" end
+            ck.Text = "✓"
+            H.CC = nil
+            H.applyTheme(key)
+        end)
+
+        H.themeButtons[key] = {btn = b, check = ck, stroke = bs, swatch = sw}
+    end
+
+    -- RGB
+    local rt = Instance.new("TextLabel")
+    rt.Size = UDim2.new(1,0,0,16); rt.Position = UDim2.new(0,0,0,158)
+    rt.BackgroundTransparency = 1; rt.Text = "CUSTOM ACCENT COLOR"
+    rt.TextColor3 = T.t2; rt.Font = H.FD; rt.TextSize = 10
+    rt.TextXAlignment = Enum.TextXAlignment.Left; rt.ZIndex = 9; rt.Parent = wrap
+
+    local cp = Instance.new("Frame")
+    cp.Size = UDim2.new(0,60,0,40); cp.Position = UDim2.new(0,0,0,180)
+    cp.BackgroundColor3 = Color3.fromRGB(128,128,128); cp.BorderSizePixel = 0
+    cp.ZIndex = 9; cp.Parent = wrap; H.corner(cp, 8)
+    H.stroke(cp, Color3.new(1,1,1), 1, 0.6)
+
+    H.rgb = {r = 230, g = 45, b = 60}
+
+    local function updatePrev()
+        cp.BackgroundColor3 = Color3.fromRGB(H.rgb.r, H.rgb.g, H.rgb.b)
+    end
+    H.updateRGB = updatePrev
+    updatePrev()
+
+    local function slider(y, ch, colr)
+        local holder = Instance.new("Frame")
+        holder.Size = UDim2.new(0,500,0,22); holder.Position = UDim2.new(0,80,0,y)
+        holder.BackgroundTransparency = 1; holder.ZIndex = 9; holder.Parent = wrap
+
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(0,20,1,0); lbl.Position = UDim2.new(0,0,0,0)
+        lbl.BackgroundTransparency = 1; lbl.Text = ch:upper()
+        lbl.TextColor3 = colr; lbl.Font = H.FD
+        lbl.TextSize = 11; lbl.ZIndex = 10; lbl.Parent = holder
+
+        local tr = Instance.new("Frame")
+        tr.Size = UDim2.new(1,-60,0,10); tr.Position = UDim2.new(0,20,0,6)
+        tr.BackgroundColor3 = T.s2; tr.BorderSizePixel = 0
+        tr.ZIndex = 9; tr.Parent = holder; H.corner(tr, 5)
+        H.grad(tr, {Color3.new(0,0,0), colr}, 0)
+
+        local fm = Instance.new("Frame")
+        fm.Size = UDim2.new(0,3,1,0); fm.Position = UDim2.new(H.rgb[ch]/255, -1.5, 0, 0)
+        fm.BackgroundColor3 = Color3.new(1,1,1); fm.BorderSizePixel = 0
+        fm.ZIndex = 11; fm.Parent = tr
+
+        local vl = Instance.new("TextLabel")
+        vl.Size = UDim2.new(0,36,1,0); vl.Position = UDim2.new(1,-38,0,0)
+        vl.BackgroundTransparency = 1; vl.Text = tostring(H.rgb[ch])
+        vl.TextColor3 = T.t0; vl.Font = H.FD
+        vl.TextSize = 11; vl.ZIndex = 10; vl.Parent = holder
+
+        local dg = false
+        local function setFromX(x)
+            local ap = tr.AbsolutePosition
+            local w = tr.AbsoluteSize.X
+            local rel = math.clamp((x - ap.X) / w, 0, 1)
+            local v = math.floor(rel * 255 + 0.5)
+            H.rgb[ch] = v
+            fm.Position = UDim2.new(rel, -1.5, 0, 0)
+            vl.Text = tostring(v)
+            updatePrev()
+        end
+        tr.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+                dg = true; setFromX(input.Position.X)
+            end
+        end)
+        tr.InputChanged:Connect(function(input)
+            if dg and (input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
+                setFromX(input.Position.X)
+            end
+        end)
+        H.UI.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then dg = false end
+        end)
+    end
+
+    slider(180, "r", Color3.fromRGB(230,60,60))
+    slider(202, "g", Color3.fromRGB(60,220,60))
+    slider(224, "b", Color3.fromRGB(60,130,230))
+
+    local ap = Instance.new("TextButton")
+    ap.Size = UDim2.new(0,220,0,32); ap.Position = UDim2.new(1,-220,0,180)
+    ap.BackgroundColor3 = T.accent; ap.BorderSizePixel = 0
+    ap.Text = "APPLY CUSTOM COLOR"; ap.TextColor3 = Color3.new(1,1,1)
+    ap.Font = H.FD; ap.TextSize = 12; ap.AutoButtonColor = false
+    ap.ZIndex = 9; ap.Parent = wrap; H.corner(ap, 8)
+    H.onTheme(function() ap.BackgroundColor3 = T.accent end)
+    ap.MouseButton1Click:Connect(function()
+        H.CC = {r = H.rgb.r, g = H.rgb.g, b = H.rgb.b}
+        local c = Color3.fromRGB(H.rgb.r, H.rgb.g, H.rgb.b)
+        H.THEMES.custom = H.buildCustomTheme(c)
+        for _, btn in pairs(H.themeButtons) do btn.check.Text = "" end
+        H.applyTheme("custom")
+    end)
+
+    -- Data buttons
+    local dt = Instance.new("TextLabel")
+    dt.Size = UDim2.new(1,0,0,14); dt.Position = UDim2.new(0,0,0,268)
+    dt.BackgroundTransparency = 1; dt.Text = "DATA MANAGEMENT"
+    dt.TextColor3 = T.t2; dt.Font = H.FD; dt.TextSize = 10
+    dt.TextXAlignment = Enum.TextXAlignment.Left; dt.ZIndex = 9; dt.Parent = wrap
+
+    local function dataBtn(x, y, w, txt, fn)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0,w,0,30); b.Position = UDim2.new(0,x,0,y)
+        b.BackgroundColor3 = T.s2; b.BackgroundTransparency = 0.3
+        b.BorderSizePixel = 0; b.Text = txt; b.TextColor3 = T.t1
+        b.Font = H.FD; b.TextSize = 11; b.AutoButtonColor = false
+        b.ZIndex = 9; b.Parent = wrap; H.corner(b, 6)
+        local s = H.stroke(b, T.danger, 1, 0.4)
+        b.MouseEnter:Connect(function()
+            H.tw(b, {BackgroundTransparency=0.05, TextColor3=T.danger}, 0.15); H.tw(s, {Transparency=0.1}, 0.15)
+        end)
+        b.MouseLeave:Connect(function()
+            H.tw(b, {BackgroundTransparency=0.3, TextColor3=T.t1}, 0.15); H.tw(s, {Transparency=0.4}, 0.15)
+        end)
+        b.MouseButton1Click:Connect(fn)
+        return b
+    end
+
+    dataBtn(0, 288, 210, "CLEAR FAVORITES", function()
+        H.favOn = {}; H.favOrder = {}
+        for _, e in pairs(H.builtin) do
+            if e.ui and e.ui.star then e.ui.star.Text = "☆"; e.ui.star.TextColor3 = T.t2 end
+        end
+        H.saveFavorites(); H.renderFaves()
+    end)
+    dataBtn(220, 288, 210, "CLEAR HISTORY", function()
+        H.history = {}; H.saveHistory(); H.renderHistory()
+    end)
+    dataBtn(0, 324, 210, "CLEAR CACHE", function()
+        if not H.FS then return end
+        pcall(function()
+            if type(listfiles) ~= "function" then return end
+            for _, f in ipairs(listfiles(H.CACHE)) do pcall(delfile, f) end
+        end)
+    end)
+    dataBtn(220, 324, 210, "RESET THEME", function()
+        for _, b in pairs(H.themeButtons) do b.check.Text = "" end
+        if H.themeButtons.red then H.themeButtons.red.check.Text = "✓" end
+        H.CC = nil; H.applyTheme("red")
+    end)
+
+    -- Config
+    local cf = Instance.new("TextLabel")
+    cf.Size = UDim2.new(1,0,0,14); cf.Position = UDim2.new(0,0,0,362)
+    cf.BackgroundTransparency = 1; cf.Text = "CONFIG"
+    cf.TextColor3 = T.t2; cf.Font = H.FD; cf.TextSize = 10
+    cf.TextXAlignment = Enum.TextXAlignment.Left; cf.ZIndex = 9; cf.Parent = wrap
+
+    -- Config modal
+    local cm = Instance.new("Frame")
+    cm.Size = UDim2.new(1,0,1,0); cm.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    cm.BackgroundTransparency = 0.5; cm.BorderSizePixel = 0
+    cm.Visible = false; cm.ZIndex = 70; cm.Parent = H.main
+
+    local cb = Instance.new("Frame")
+    cb.AnchorPoint = Vector2.new(0.5,0.5); cb.Position = UDim2.new(0.5,0,0.5,0)
+    cb.Size = UDim2.new(0,480,0,300); cb.BackgroundColor3 = T.s1
+    cb.BackgroundTransparency = 0.05; cb.BorderSizePixel = 0
+    cb.ZIndex = 71; cb.Parent = cm; H.corner(cb, 14)
+    local cbs = H.stroke(cb, T.accent, 1.5, 0.3)
+    H.onTheme(function() cbs.Color = T.accent end)
+
+    local ct = Instance.new("TextLabel")
+    ct.Size = UDim2.new(1,0,0,26); ct.Position = UDim2.new(0,0,0,12)
+    ct.BackgroundTransparency = 1; ct.Text = "CONFIG"
+    ct.TextColor3 = T.aHi; ct.Font = H.FD; ct.TextSize = 16
+    ct.ZIndex = 72; ct.Parent = cb
+    H.onTheme(function() ct.TextColor3 = T.aHi end)
+
+    local ci = Instance.new("TextLabel")
+    ci.Size = UDim2.new(1,-30,0,18); ci.Position = UDim2.new(0,15,0,38)
+    ci.BackgroundTransparency = 1; ci.Text = "> copy this JSON"
+    ci.TextColor3 = T.t3; ci.Font = H.FD; ci.TextSize = 10
+    ci.TextXAlignment = Enum.TextXAlignment.Left; ci.ZIndex = 72; ci.Parent = cb
+
+    local ctext = Instance.new("TextBox")
+    ctext.Size = UDim2.new(1,-30,0,160); ctext.Position = UDim2.new(0,15,0,60)
+    ctext.BackgroundColor3 = T.s0; ctext.BackgroundTransparency = 0.3
+    ctext.BorderSizePixel = 0; ctext.Text = ""; ctext.TextColor3 = T.t0
+    ctext.Font = H.FD; ctext.TextSize = 10; ctext.TextWrapped = true
+    ctext.TextXAlignment = Enum.TextXAlignment.Left
+    ctext.TextYAlignment = Enum.TextYAlignment.Top
+    ctext.ClearTextOnFocus = false; ctext.MultiLine = true
+    ctext.ZIndex = 72; ctext.Parent = cb; H.corner(ctext, 8)
+    H.stroke(ctext, T.accent, 1, 0.6)
+
+    local cc = Instance.new("TextButton")
+    cc.Size = UDim2.new(0,140,0,34); cc.Position = UDim2.new(0,15,1,-46)
+    cc.BackgroundColor3 = T.accent; cc.BorderSizePixel = 0
+    cc.Text = "COPY"; cc.TextColor3 = Color3.new(1,1,1)
+    cc.Font = H.FD; cc.TextSize = 12; cc.AutoButtonColor = false
+    cc.ZIndex = 72; cc.Parent = cb; H.corner(cc, 8)
+    H.onTheme(function() cc.BackgroundColor3 = T.accent end)
+
+    local ca = Instance.new("TextButton")
+    ca.Size = UDim2.new(0,140,0,34); ca.Position = UDim2.new(0,165,1,-46)
+    ca.BackgroundColor3 = T.s3; ca.BackgroundTransparency = 0.3
+    ca.BorderSizePixel = 0; ca.Text = "APPLY"; ca.TextColor3 = T.t1
+    ca.Font = H.FD; ca.TextSize = 12; ca.AutoButtonColor = false
+    ca.ZIndex = 72; ca.Parent = cb; H.corner(ca, 8)
+
+    local ccl = Instance.new("TextButton")
+    ccl.Size = UDim2.new(0,140,0,34); ccl.Position = UDim2.new(1,-155,1,-46)
+    ccl.BackgroundColor3 = T.s3; ccl.BackgroundTransparency = 0.3
+    ccl.BorderSizePixel = 0; ccl.Text = "CLOSE"; ccl.TextColor3 = T.t1
+    ccl.Font = H.FD; ccl.TextSize = 12; ccl.AutoButtonColor = false
+    ccl.ZIndex = 72; ccl.Parent = cb; H.corner(ccl, 8)
+
+    local cfgMode = "export"
+    H.cfgModal = cm
+
+    cc.MouseButton1Click:Connect(function()
+        pcall(function() if setclipboard then setclipboard(ctext.Text) end end)
+        ci.Text = "> copied (or select manually)"
+        ci.TextColor3 = T.ok
+        task.delay(2, function() ci.Text = "> copy this JSON"; ci.TextColor3 = T.t3 end)
+    end)
+
+    local function importData(d)
+        if type(d.theme) == "string" and H.THEMES[d.theme] then
+            for _, b in pairs(H.themeButtons) do b.check.Text = "" end
+            H.CC = nil; H.applyTheme(d.theme)
+        end
+        if type(d.customColor) == "table" and d.customColor.r then
+            H.rgb.r = d.customColor.r; H.rgb.g = d.customColor.g; H.rgb.b = d.customColor.b
+            if H.updateRGB then H.updateRGB() end
+            H.CC = {r = H.rgb.r, g = H.rgb.g, b = H.rgb.b}
+            H.THEMES.custom = H.buildCustomTheme(Color3.fromRGB(H.rgb.r, H.rgb.g, H.rgb.b))
+            for _, b in pairs(H.themeButtons) do b.check.Text = "" end
+            H.applyTheme("custom")
+        end
+        if type(d.favorites) == "table" then
+            H.favOn = {}; H.favOrder = {}
+            for _, k in ipairs(d.favorites) do
+                if H.builtin[k] then
+                    H.favOn[k] = true; table.insert(H.favOrder, k)
+                    if H.builtin[k].ui and H.builtin[k].ui.star then
+                        H.builtin[k].ui.star.Text = "★"
+                        H.builtin[k].ui.star.TextColor3 = T.warn
+                    end
+                end
+            end
+            H.saveFavorites(); H.renderFaves()
+        end
+        if type(d.history) == "table" then
+            H.history = {}
+            for _, e in ipairs(d.history) do
+                if type(e) == "table" and type(e.url) == "string" then
+                    table.insert(H.history, {url = e.url, ok = e.ok and true or false})
+                end
+            end
+            H.saveHistory(); H.renderHistory()
+        end
+        if type(d.userScripts) == "table" then
+            H.userScripts = {}
+            for _, e in ipairs(d.userScripts) do
+                if type(e) == "table" and type(e.url) == "string" then
+                    table.insert(H.userScripts, {name = tostring(e.name or "CUSTOM"), icon = tostring(e.icon or "★"), url = tostring(e.url)})
+                end
+            end
+            H.saveUserScripts(); H.renderUserScripts()
+        end
+        if type(d.autoload) == "table" then
+            H.autoloadSet = {}
+            for _, u in ipairs(d.autoload) do
+                if type(u) == "string" then H.autoloadSet[u] = true end
+            end
+            H.saveAutoload(); H.renderAutoload()
+        end
+        H.saveSettings()
+    end
+
+    ca.MouseButton1Click:Connect(function()
+        if cfgMode == "import" then
+            local ok, d = pcall(function() return H.Ht:JSONDecode(ctext.Text) end)
+            if not ok or type(d) ~= "table" then
+                ci.Text = "> invalid JSON"; ci.TextColor3 = T.danger; return
+            end
+            importData(d)
+            ci.Text = "> imported!"; ci.TextColor3 = T.ok
+            task.delay(1, function() cm.Visible = false end)
+        end
+    end)
+    ccl.MouseButton1Click:Connect(function() cm.Visible = false end)
+
+    local function exportCfg()
+        local d = {
+            version = "7.2", theme = H.CT, customColor = H.CC,
+            favorites = H.favOrder, history = H.history,
+            userScripts = {}, autoload = {},
+        }
+        for _, e in ipairs(H.userScripts) do
+            table.insert(d.userScripts, {name = e.name, icon = e.icon, url = e.url})
+        end
+        for u in pairs(H.autoloadSet) do table.insert(d.autoload, u) end
+        local ok, enc = pcall(function() return H.Ht:JSONEncode(d) end)
+        if not ok then return end
+        ct.Text = "EXPORT CONFIG"
+        ci.Text = "> copy this JSON"; ci.TextColor3 = T.t3
+        ctext.Text = enc; ctext.TextEditable = false
+        ca.Visible = false; cfgMode = "export"; cm.Visible = true
+    end
+
+    local function importCfg()
+        ct.Text = "IMPORT CONFIG"
+        ci.Text = "> paste JSON and click APPLY"; ci.TextColor3 = T.t3
+        ctext.Text = ""; ctext.TextEditable = true
+        ca.Visible = true; cfgMode = "import"; cm.Visible = true
+        task.delay(0.1, function() pcall(function() ctext:CaptureFocus() end) end)
+    end
+
+    dataBtn(0, 382, 210, "EXPORT CONFIG", exportCfg)
+    dataBtn(220, 382, 210, "IMPORT CONFIG", importCfg)
+end
+
+-- ============================================================
+-- FOOTER
+-- ============================================================
+H.footer = Instance.new("Frame")
+H.footer.Size = UDim2.new(1,-40,0,24); H.footer.Position = UDim2.new(0,20,1,-34)
+H.footer.BackgroundTransparency = 1; H.footer.ZIndex = 10; H.footer.Parent = H.main
+
+do
+    local fl = Instance.new("Frame")
+    fl.Size = UDim2.new(1,0,0,1); fl.BackgroundColor3 = T.accent
+    fl.BackgroundTransparency = 0.85; fl.BorderSizePixel = 0
+    fl.ZIndex = 10; fl.Parent = H.footer
+    H.onTheme(function() fl.BackgroundColor3 = T.accent end)
+
+    local fp = Instance.new("TextLabel")
+    fp.Size = UDim2.new(0,80,1,0); fp.Position = UDim2.new(0,0,0,4)
+    fp.BackgroundTransparency = 1; fp.Text = "fps: --"
+    fp.TextColor3 = T.t3; fp.Font = H.FD; fp.TextSize = 10
+    fp.TextXAlignment = Enum.TextXAlignment.Left; fp.ZIndex = 10; fp.Parent = H.footer
+
+    local gl = Instance.new("TextLabel")
+    gl.Size = UDim2.new(0,200,1,0); gl.Position = UDim2.new(0.5,-100,0,4)
+    gl.BackgroundTransparency = 1; gl.Text = ""
+    gl.TextColor3 = T.accent; gl.Font = H.FD; gl.TextSize = 10
+    gl.TextXAlignment = Enum.TextXAlignment.Center; gl.ZIndex = 10; gl.Parent = H.footer
+    H.onTheme(function() gl.TextColor3 = T.accent end)
+    gl.Text = "place: " .. tostring(game.PlaceId)
+
+    local tag = Instance.new("TextLabel")
+    tag.Size = UDim2.new(0,120,1,0); tag.Position = UDim2.new(1,-120,0,4)
+    tag.BackgroundTransparency = 1; tag.Text = "by fox · for jack"
+    tag.TextColor3 = T.t3; tag.Font = H.FD; tag.TextSize = 10
+    tag.TextXAlignment = Enum.TextXAlignment.Right; tag.ZIndex = 10; tag.Parent = H.footer
+
+    local a, f = 0, 0
+    H.RS.RenderStepped:Connect(function(dt)
+        if not H.main.Parent then return end
+        a = a + dt; f = f + 1
+        if a >= 0.5 then
+            fp.Text = "fps: " .. math.floor(f / a + 0.5)
+            a = 0; f = 0
+        end
+    end)
+end
+
+-- ============================================================
+-- MINI REOPEN
+-- ============================================================
+H.mini = Instance.new("Frame")
+H.mini.Name = "MiniReopen"; H.mini.Size = UDim2.new(0,52,0,52)
+H.mini.Position = UDim2.new(0.5,-26,0,80); H.mini.BackgroundColor3 = T.s2
+H.mini.BorderSizePixel = 0; H.mini.Visible = false; H.mini.Active = true
+H.mini.ZIndex = 250; H.mini.ClipsDescendants = true; H.mini.Parent = H.gui
+H.corner(H.mini, 14); local ms = H.stroke(H.mini, T.accent, 1.5, 0.4)
+H.onTheme(function() ms.Color = T.accent end)
+
+do
+    local mi = Instance.new("ImageLabel")
+    mi.Size = UDim2.new(1,0,1,0); mi.BackgroundTransparency = 1
+    mi.Image = H.ICON; mi.ScaleType = Enum.ScaleType.Crop
+    mi.ZIndex = 252; mi.Parent = H.mini
+
+    local mb = Instance.new("TextButton")
+    mb.Size = UDim2.new(1,0,1,0); mb.BackgroundTransparency = 1
+    mb.Text = ""; mb.AutoButtonColor = false; mb.Active = true
+    mb.ZIndex = 253; mb.Parent = H.mini
+
+    local drag, moved = false, false
+    local sm = Vector2.new(0,0)
+    local sp = UDim2.new(0,0,0,0)
+
+    H.RS.RenderStepped:Connect(function()
+        if not drag or not H.mini.Parent then return end
+        local mp = H.UI:GetMouseLocation()
+        local dx = mp.X - sm.X
+        local dy = mp.Y - sm.Y
+        if math.abs(dx) > 2 or math.abs(dy) > 2 then moved = true end
+        local nx = sp.X.Offset + dx
+        local ny = sp.Y.Offset + dy
+        local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920,1080)
+        local sz = H.mini.AbsoluteSize
+        nx = math.clamp(nx, 0, math.max(0, vp.X - sz.X))
+        ny = math.clamp(ny, 0, math.max(0, vp.Y - sz.Y))
+        H.mini.Position = UDim2.new(0, nx, 0, ny)
+    end)
+
+    mb.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            drag = true; moved = false
+            sm = H.UI:GetMouseLocation()
+            local ab = H.mini.AbsolutePosition
+            sp = UDim2.new(0, ab.X, 0, ab.Y)
+        end
+    end)
+
+    H.UI.InputEnded:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        if not drag then return end
+        drag = false
+        if not moved then
+            H.mini.Visible = false
+            H.container.Visible = true
+            H.cScale.Scale = 0.5
+            H.tw(H.cScale, {Scale = 1}, 0.35, Enum.EasingStyle.Back)
+        end
+    end)
+
+    H.minBtn.MouseButton1Click:Connect(function()
+        H.container.Visible = false; H.mini.Visible = true
+    end)
+end
+
+-- ============================================================
+-- PANIC + SCREENSHOT
+-- ============================================================
+H.panicWipe = function()
+    local targets = {"infiniteyield","iy","dex","hydroxide","cmd-x","cmd x","kavo","orion","fluxus","skid","dark dex","remotespy","serverhop","sirhurt","synapse","a-90","a90"}
+    local function kill(i)
+        local n = string.lower(i.Name)
+        for _, t in ipairs(targets) do
+            if string.find(n, t, 1, true) then pcall(function() i:Destroy() end); return end
+        end
+    end
+    pcall(function()
+        for _, c in ipairs(H.CG:GetChildren()) do if c ~= H.gui then kill(c) end end
+    end)
+    pcall(function()
+        local pg = H.LP:FindFirstChild("PlayerGui")
+        if pg then for _, c in ipairs(pg:GetChildren()) do kill(c) end end
+    end)
+    pcall(function() H.gui:Destroy() end)
+end
+
+H.screenshot = false
+H.restoreDot = nil
+H.setScreenshot = function(on)
+    H.screenshot = on
+    if on then
+        H.container.Visible = false
+        H.mini.Visible = false
+        if not (H.restoreDot and H.restoreDot.Parent) then
+            local rd = Instance.new("TextButton")
+            rd.Size = UDim2.new(0,22,0,22); rd.Position = UDim2.new(1,-32,0,30)
+            rd.BackgroundColor3 = T.s2; rd.BackgroundTransparency = 0.6
+            rd.BorderSizePixel = 0; rd.Text = "◎"; rd.TextColor3 = T.accent
+            rd.Font = H.FD; rd.TextSize = 14; rd.AutoButtonColor = false
+            rd.ZIndex = 400; rd.Parent = H.gui; H.corner(rd, 999)
+            H.onTheme(function() rd.TextColor3 = T.accent end)
+            rd.MouseButton1Click:Connect(function() H.setScreenshot(false) end)
+            H.restoreDot = rd
+        end
+        H.restoreDot.Visible = true
+    else
+        if H.restoreDot then H.restoreDot.Visible = false end
+        H.container.Visible = true
+        H.cScale.Scale = 0.5
+        H.tw(H.cScale, {Scale = 1}, 0.35, Enum.EasingStyle.Back)
+    end
+end
+
+H.UI.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.F2 then H.setScreenshot(not H.screenshot) end
+    if input.KeyCode == Enum.KeyCode.X and H.UI:IsKeyDown(Enum.KeyCode.LeftControl) then H.panicWipe() end
+end)
+
+-- ============================================================
+-- TAB SWITCH
+-- ============================================================
+H.setTab = function(name)
+    if H.activeTab == name then return end
+    for _, tab in ipairs(H.TABS) do
+        H.pages[tab.name].Visible = false
+        local ic = H.tabIcons[tab.name]
+        H.tw(ic.icon, {TextColor3 = T.t2}, 0.2)
+        H.tw(ic.label, {TextColor3 = T.t2}, 0.2)
+    end
+    H.pages[name].Visible = true
+    local ic = H.tabIcons[name]
+    H.tw(ic.icon, {TextColor3 = T.t0}, 0.2)
+    H.tw(ic.label, {TextColor3 = T.t0}, 0.2)
+    for i, tab in ipairs(H.TABS) do
+        if tab.name == name then
+            H.tw(H.pill, {Position = UDim2.new(0, (i-1)*H.TAB_W + 4, 0, 4)}, 0.35, Enum.EasingStyle.Quart)
+            break
+        end
+    end
+    H.activeTab = name
+    for _, e in ipairs(H.registry) do e.ui.slot.Visible = true end
+    local q = string.lower(H.searchInput.Text)
+    if q ~= "" then
+        for _, e in ipairs(H.registry) do
+            if e.ui.slot.Parent == H.pages[name] or e.ui.slot.Parent == H.userScroll then
+                e.ui.slot.Visible = string.find(string.lower(e.label), q, 1, true) ~= nil
+            end
+        end
+    end
+end
+
+for _, tab in ipairs(H.TABS) do
+    H.tabButtons[tab.name].MouseButton1Click:Connect(function() H.setTab(tab.name) end)
+end
+
+H.searchInput:GetPropertyChangedSignal("Text"):Connect(function()
+    local q = string.lower(H.searchInput.Text)
+    for _, e in ipairs(H.registry) do
+        if e.ui.slot.Parent == H.pages[H.activeTab] or e.ui.slot.Parent == H.userScroll then
+            if q == "" then e.ui.slot.Visible = true
+            else e.ui.slot.Visible = string.find(string.lower(e.label), q, 1, true) ~= nil end
+        end
+    end
+end)
+
+-- ============================================================
+-- SETTINGS + THEME
+-- ============================================================
+H.saveSettings = function()
+    H.writeJ(H.F_SET, {theme = H.CT, customColor = H.CC})
+end
+
+H.loadSettings = function()
+    local d = H.readJ(H.F_SET, nil)
+    if type(d) == "table" then
+        if type(d.theme) == "string" and H.THEMES[d.theme] then H.CT = d.theme end
+        if type(d.customColor) == "table" and d.customColor.r then
+            H.CC = d.customColor
+            H.rgb.r = d.customColor.r; H.rgb.g = d.customColor.g; H.rgb.b = d.customColor.b
+            if H.updateRGB then H.updateRGB() end
+            H.THEMES.custom = H.buildCustomTheme(Color3.fromRGB(H.rgb.r, H.rgb.g, H.rgb.b))
+        end
+    end
+end
+
+H.applyTheme = function(name)
+    local th = H.THEMES[name] or H.THEMES.red
+    H.CT = name
+    T.accent = th.accent; T.aHi = th.aHi; T.aGlow = th.aGlow
+    T.aDeep = th.aDeep; T.aEdge = th.aEdge; T.ember = th.ember; T.emberHi = th.emberHi
+    for _, fn in ipairs(H.themeAppliers) do pcall(fn) end
+    for _, e in pairs(H.builtin) do if e.sm then e.sm.refresh() end end
+    for _, e in ipairs(H.userScripts) do if e.sm then e.sm.refresh() end end
+    H.saveSettings()
+end
+
+-- BOOT
+local detectedDoors = (DOORS_PLACE_IDS and DOORS_PLACE_IDS[game.PlaceId]) or false
+if not detectedDoors then
+    local ok, n = pcall(function()
+        return game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    end)
+    detectedDoors = ok and n and string.find(string.lower(n), "doors", 1, true) ~= nil
+end
+
+print("[A-90 HUB v7.2] DOORS: "..tostring(detectedDoors))
+print("[A-90 HUB v7.2] tier: "..H.TIER)
+print("[A-90 HUB v7.2] FS: "..tostring(H.FS))
+
+H.loadSettings()
+H.loadFavorites()
+H.loadHistory()
+H.loadUserScripts()
+
+do
+    local th = H.THEMES[H.CT] or H.THEMES.red
+    T.accent = th.accent; T.aHi = th.aHi; T.aGlow = th.aGlow
+    T.aDeep = th.aDeep; T.aEdge = th.aEdge; T.ember = th.ember; T.emberHi = th.emberHi
+    for _, fn in ipairs(H.themeAppliers) do pcall(fn) end
+    for _, e in pairs(H.builtin) do if e.sm then e.sm.refresh() end end
+    for _, e in ipairs(H.userScripts) do if e.sm then e.sm.refresh() end end
+end
+
+for k, b in pairs(H.themeButtons) do
+    b.check.Text = (k == H.CT) and "✓" or ""
+end
+
+H.playIntro(function()
+    H.container.Visible = true
+    H.cScale.Scale = 0.05
+    H.tw(H.cScale, {Scale = 1}, 0.6, Enum.EasingStyle.Back)
+    H.renderFaves()
+    H.renderUserScripts()
+    H.renderAutoload()
+    if detectedDoors then
+        task.delay(0.5, function() H.setTab("DOORS") end)
+    end
+    task.delay(1.2, function()
+        local cnt = 0
+        for _ in pairs(H.autoloadSet) do cnt = cnt + 1 end
+        if cnt > 0 then
+            print("[A-90 autoload] "..cnt)
+            for url in pairs(H.autoloadSet) do
+                task.spawn(function()
+                    local ok, err = pcall(function() loadstring(H.fetch(url))() end)
+                    if not ok then warn("[autoload] "..tostring(err)) end
+                end)
+                task.wait(0.2)
+            end
+        end
+    end)
+end)
+
+print("[A-90 HUB v7.2] loaded")
