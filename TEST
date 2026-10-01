@@ -127,6 +127,7 @@ local THEMES = {
 }
 
 local currentTheme = "red"
+
 -- =========================================================
 --  CUSTOM RGB THEME
 -- =========================================================
@@ -150,8 +151,9 @@ local function buildCustomTheme(r, g, b)
 end
 
 THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
+
 -- =========================================================
---  DESIGN TOKENS (mutable — theme swaps these)
+--  DESIGN TOKENS
 -- =========================================================
 
 local T = {
@@ -331,7 +333,6 @@ local function grad(inst, colors, rotation, transparency)
     return g
 end
 
--- theme applier registry
 local themeAppliers = {}
 local function onTheme(fn) table.insert(themeAppliers, fn) end
 
@@ -413,14 +414,16 @@ local containerScale = Instance.new("UIScale")
 containerScale.Scale = 0.05
 containerScale.Parent = container
 
-local function shadow(offsetY, transp)
-    local sh = Instance.new("Frame")
-    sh.Size = UDim2.new(1,0,1,0); sh.Position = UDim2.new(0,0,0,offsetY)
-    sh.BackgroundColor3 = Color3.new(0,0,0); sh.BackgroundTransparency = transp
-    sh.BorderSizePixel = 0; sh.ZIndex = 1; sh.Parent = container
-    corner(sh, 20)
+do
+    local function shadow(offsetY, transp)
+        local sh = Instance.new("Frame")
+        sh.Size = UDim2.new(1,0,1,0); sh.Position = UDim2.new(0,0,0,offsetY)
+        sh.BackgroundColor3 = Color3.new(0,0,0); sh.BackgroundTransparency = transp
+        sh.BorderSizePixel = 0; sh.ZIndex = 1; sh.Parent = container
+        corner(sh, 20)
+    end
+    shadow(16, 0.94); shadow(10, 0.88); shadow(5, 0.82); shadow(2, 0.68)
 end
-shadow(16, 0.94); shadow(10, 0.88); shadow(5, 0.82); shadow(2, 0.68)
 
 -- =========================================================
 --  MAIN PANEL
@@ -434,21 +437,12 @@ main.Parent = container
 corner(main, 20)
 grad(main, { T.surface1, T.surface0 }, 135)
 
-local mainStroke = Instance.new("UIStroke")
-mainStroke.Thickness = 2; mainStroke.Color = Color3.new(1,1,1); mainStroke.Transparency = 0
-mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; mainStroke.Parent = main
+do
+    local mainStroke = Instance.new("UIStroke")
+    mainStroke.Thickness = 2; mainStroke.Color = Color3.new(1,1,1); mainStroke.Transparency = 0
+    mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border; mainStroke.Parent = main
 
-local strokeGrad = Instance.new("UIGradient")
-strokeGrad.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0.00, T.accentHi),
-    ColorSequenceKeypoint.new(0.25, T.accentGlow),
-    ColorSequenceKeypoint.new(0.50, T.accent),
-    ColorSequenceKeypoint.new(0.75, T.accentEdge),
-    ColorSequenceKeypoint.new(1.00, T.accentHi),
-})
-strokeGrad.Parent = mainStroke
-
-onTheme(function()
+    local strokeGrad = Instance.new("UIGradient")
     strokeGrad.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0.00, T.accentHi),
         ColorSequenceKeypoint.new(0.25, T.accentGlow),
@@ -456,37 +450,50 @@ onTheme(function()
         ColorSequenceKeypoint.new(0.75, T.accentEdge),
         ColorSequenceKeypoint.new(1.00, T.accentHi),
     })
-end)
+    strokeGrad.Parent = mainStroke
 
-task.spawn(function()
-    while main.Parent do
-        strokeGrad.Offset = Vector2.new((tick() % 6) / 6, 0)
-        RunService.RenderStepped:Wait()
+    onTheme(function()
+        strokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0.00, T.accentHi),
+            ColorSequenceKeypoint.new(0.25, T.accentGlow),
+            ColorSequenceKeypoint.new(0.50, T.accent),
+            ColorSequenceKeypoint.new(0.75, T.accentEdge),
+            ColorSequenceKeypoint.new(1.00, T.accentHi),
+        })
+    end)
+
+    task.spawn(function()
+        while main.Parent do
+            strokeGrad.Offset = Vector2.new((tick() % 6) / 6, 0)
+            RunService.RenderStepped:Wait()
+        end
+    end)
+end
+
+do
+    local gridHolder = Instance.new("Frame")
+    gridHolder.Size = UDim2.new(1,0,1,0); gridHolder.BackgroundTransparency = 1
+    gridHolder.ZIndex = 2; gridHolder.Parent = main
+    local gridLines = {}
+    for i = 0, 13 do
+        local line = Instance.new("Frame")
+        line.Size = UDim2.new(1,0,0,1); line.Position = UDim2.new(0,0,0,i*40)
+        line.BackgroundColor3 = T.accent; line.BackgroundTransparency = 0.96
+        line.BorderSizePixel = 0; line.ZIndex = 2; line.Parent = gridHolder
+        table.insert(gridLines, line)
     end
-end)
+    for i = 0, 18 do
+        local line = Instance.new("Frame")
+        line.Size = UDim2.new(0,1,1,0); line.Position = UDim2.new(0,i*40,0,0)
+        line.BackgroundColor3 = T.accent; line.BackgroundTransparency = 0.96
+        line.BorderSizePixel = 0; line.ZIndex = 2; line.Parent = gridHolder
+        table.insert(gridLines, line)
+    end
 
-local gridHolder = Instance.new("Frame")
-gridHolder.Size = UDim2.new(1,0,1,0); gridHolder.BackgroundTransparency = 1
-gridHolder.ZIndex = 2; gridHolder.Parent = main
-local gridLines = {}
-for i = 0, 13 do
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(1,0,0,1); line.Position = UDim2.new(0,0,0,i*40)
-    line.BackgroundColor3 = T.accent; line.BackgroundTransparency = 0.96
-    line.BorderSizePixel = 0; line.ZIndex = 2; line.Parent = gridHolder
-    table.insert(gridLines, line)
+    onTheme(function()
+        for _, l in ipairs(gridLines) do l.BackgroundColor3 = T.accent end
+    end)
 end
-for i = 0, 18 do
-    local line = Instance.new("Frame")
-    line.Size = UDim2.new(0,1,1,0); line.Position = UDim2.new(0,i*40,0,0)
-    line.BackgroundColor3 = T.accent; line.BackgroundTransparency = 0.96
-    line.BorderSizePixel = 0; line.ZIndex = 2; line.Parent = gridHolder
-    table.insert(gridLines, line)
-end
-
-onTheme(function()
-    for _, l in ipairs(gridLines) do l.BackgroundColor3 = T.accent end
-end)
 
 -- =========================================================
 --  HEADER
@@ -496,150 +503,150 @@ local header = Instance.new("Frame")
 header.Size = UDim2.new(1,0,0,76); header.BackgroundTransparency = 1
 header.ZIndex = 10; header.Parent = main
 
-local iconBox = Instance.new("Frame")
-iconBox.Size = UDim2.new(0,44,0,44); iconBox.Position = UDim2.new(0,20,0,16)
-iconBox.BackgroundColor3 = T.surface2; iconBox.BorderSizePixel = 0
-iconBox.ZIndex = 11; iconBox.ClipsDescendants = true; iconBox.Parent = header
-corner(iconBox, 12); local iconBoxStroke = stroke(iconBox, T.accent, 1.5, 0.4)
+do
+    local iconBox = Instance.new("Frame")
+    iconBox.Size = UDim2.new(0,44,0,44); iconBox.Position = UDim2.new(0,20,0,16)
+    iconBox.BackgroundColor3 = T.surface2; iconBox.BorderSizePixel = 0
+    iconBox.ZIndex = 11; iconBox.ClipsDescendants = true; iconBox.Parent = header
+    corner(iconBox, 12); local iconBoxStroke = stroke(iconBox, T.accent, 1.5, 0.4)
 
-onTheme(function() iconBoxStroke.Color = T.accent end)
+    onTheme(function() iconBoxStroke.Color = T.accent end)
 
-local iconImage = Instance.new("ImageLabel")
-iconImage.Size = UDim2.new(1,0,1,0); iconImage.BackgroundTransparency = 1
-iconImage.Image = HUB_ICON; iconImage.ScaleType = Enum.ScaleType.Crop
-iconImage.ZIndex = 12; iconImage.Parent = iconBox
+    local iconImage = Instance.new("ImageLabel")
+    iconImage.Size = UDim2.new(1,0,1,0); iconImage.BackgroundTransparency = 1
+    iconImage.Image = HUB_ICON; iconImage.ScaleType = Enum.ScaleType.Crop
+    iconImage.ZIndex = 12; iconImage.Parent = iconBox
 
-local titleGhost = Instance.new("TextLabel")
-titleGhost.Size = UDim2.new(1,-280,0,24); titleGhost.Position = UDim2.new(0,76,0,16)
-titleGhost.BackgroundTransparency = 1; titleGhost.Text = "A-90 HUB"
-titleGhost.TextColor3 = T.accent; titleGhost.Font = FONT_DISPLAY
-titleGhost.TextSize = 20; titleGhost.TextTransparency = 0.5
-titleGhost.TextXAlignment = Enum.TextXAlignment.Left; titleGhost.ZIndex = 10; titleGhost.Parent = header
+    local titleGhost = Instance.new("TextLabel")
+    titleGhost.Size = UDim2.new(1,-280,0,24); titleGhost.Position = UDim2.new(0,76,0,16)
+    titleGhost.BackgroundTransparency = 1; titleGhost.Text = "A-90 HUB"
+    titleGhost.TextColor3 = T.accent; titleGhost.Font = FONT_DISPLAY
+    titleGhost.TextSize = 20; titleGhost.TextTransparency = 0.5
+    titleGhost.TextXAlignment = Enum.TextXAlignment.Left; titleGhost.ZIndex = 10; titleGhost.Parent = header
 
-onTheme(function() titleGhost.TextColor3 = T.accent end)
+    onTheme(function() titleGhost.TextColor3 = T.accent end)
 
-local titleHeader = Instance.new("TextLabel")
-titleHeader.Size = UDim2.new(1,-280,0,24); titleHeader.Position = UDim2.new(0,75,0,16)
-titleHeader.BackgroundTransparency = 1; titleHeader.Text = "A-90 HUB"
-titleHeader.TextColor3 = T.text0; titleHeader.Font = FONT_DISPLAY
-titleHeader.TextSize = 20; titleHeader.TextXAlignment = Enum.TextXAlignment.Left
-titleHeader.ZIndex = 11; titleHeader.Parent = header
+    local titleHeader = Instance.new("TextLabel")
+    titleHeader.Size = UDim2.new(1,-280,0,24); titleHeader.Position = UDim2.new(0,75,0,16)
+    titleHeader.BackgroundTransparency = 1; titleHeader.Text = "A-90 HUB"
+    titleHeader.TextColor3 = T.text0; titleHeader.Font = FONT_DISPLAY
+    titleHeader.TextSize = 20; titleHeader.TextXAlignment = Enum.TextXAlignment.Left
+    titleHeader.ZIndex = 11; titleHeader.Parent = header
 
-task.spawn(function()
-    while titleHeader.Parent do
-        task.wait(math.random(25,60)/100)
-        local s = scramble("A-90 HUB", 1)
-        titleHeader.Text = s; titleGhost.Text = s
-        task.wait(0.04)
-        titleHeader.Text = "A-90 HUB"; titleGhost.Text = "A-90 HUB"
+    task.spawn(function()
+        while titleHeader.Parent do
+            task.wait(math.random(25,60)/100)
+            local s = scramble("A-90 HUB", 1)
+            titleHeader.Text = s; titleGhost.Text = s
+            task.wait(0.04)
+            titleHeader.Text = "A-90 HUB"; titleGhost.Text = "A-90 HUB"
+        end
+    end)
+
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.new(0,5,0,5); dot.Position = UDim2.new(0,77,0,47)
+    dot.BackgroundColor3 = T.ok; dot.BorderSizePixel = 0; dot.ZIndex = 11; dot.Parent = header
+    corner(dot, 999)
+    task.spawn(function()
+        while dot.Parent do
+            tween(dot, { BackgroundTransparency = 0.7 }, 1); task.wait(1)
+            tween(dot, { BackgroundTransparency = 0 }, 1); task.wait(1)
+        end
+    end)
+
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1,-280,0,16); subtitle.Position = UDim2.new(0,88,0,42)
+    subtitle.BackgroundTransparency = 1; subtitle.Text = "premium multi-tab loader"
+    subtitle.TextColor3 = T.text2; subtitle.Font = FONT_DISPLAY
+    subtitle.TextSize = 11; subtitle.TextXAlignment = Enum.TextXAlignment.Left
+    subtitle.ZIndex = 10; subtitle.Parent = header
+
+    local tierBadge = Instance.new("Frame")
+    tierBadge.Size = UDim2.new(0,110,0,20); tierBadge.Position = UDim2.new(1,-276,0,28)
+    tierBadge.BackgroundColor3 = T.ok; tierBadge.BackgroundTransparency = 0.15
+    tierBadge.BorderSizePixel = 0; tierBadge.ZIndex = 11; tierBadge.Visible = false
+    tierBadge.Parent = header
+    corner(tierBadge, 6); stroke(tierBadge, T.okHi, 1, 0.4)
+
+    local tierLbl = Instance.new("TextLabel")
+    tierLbl.Size = UDim2.new(1,0,1,0); tierLbl.BackgroundTransparency = 1
+    tierLbl.Text = "OWNER"; tierLbl.TextColor3 = Color3.fromRGB(5,30,15)
+    tierLbl.Font = FONT_DISPLAY; tierLbl.TextSize = 10; tierLbl.ZIndex = 12
+    tierLbl.Parent = tierBadge
+
+    applyTierBadge = function()
+        if userTier == "owner" then
+            tierBadge.Visible = true; tierBadge.BackgroundColor3 = T.ok
+            tierLbl.Text = "OWNER"; tierLbl.TextColor3 = Color3.fromRGB(5,30,15)
+        elseif userTier == "owner_friend" then
+            tierBadge.Visible = true; tierBadge.BackgroundColor3 = T.warn
+            tierLbl.Text = "OWNER_FRIENDS"; tierLbl.TextColor3 = Color3.fromRGB(40,28,0)
+        else
+            tierBadge.Visible = false
+        end
     end
-end)
 
-local dot = Instance.new("Frame")
-dot.Size = UDim2.new(0,5,0,5); dot.Position = UDim2.new(0,77,0,47)
-dot.BackgroundColor3 = T.ok; dot.BorderSizePixel = 0; dot.ZIndex = 11; dot.Parent = header
-corner(dot, 999)
-task.spawn(function()
-    while dot.Parent do
-        tween(dot, { BackgroundTransparency = 0.7 }, 1); task.wait(1)
-        tween(dot, { BackgroundTransparency = 0 }, 1); task.wait(1)
-    end
-end)
+    local verBadge = Instance.new("Frame")
+    verBadge.Size = UDim2.new(0,50,0,20); verBadge.Position = UDim2.new(1,-152,0,28)
+    verBadge.BackgroundColor3 = T.surface3; verBadge.BackgroundTransparency = 0.4
+    verBadge.BorderSizePixel = 0; verBadge.ZIndex = 11; verBadge.Parent = header
+    corner(verBadge, 6); local verStroke = stroke(verBadge, T.accent, 1, 0.7)
 
-local subtitle = Instance.new("TextLabel")
-subtitle.Size = UDim2.new(1,-280,0,16); subtitle.Position = UDim2.new(0,88,0,42)
-subtitle.BackgroundTransparency = 1; subtitle.Text = "premium multi-tab loader"
-subtitle.TextColor3 = T.text2; subtitle.Font = FONT_DISPLAY
-subtitle.TextSize = 11; subtitle.TextXAlignment = Enum.TextXAlignment.Left
-subtitle.ZIndex = 10; subtitle.Parent = header
+    local verLbl = Instance.new("TextLabel")
+    verLbl.Size = UDim2.new(1,0,1,0); verLbl.BackgroundTransparency = 1
+    verLbl.Text = "v6.0"; verLbl.TextColor3 = T.accentHi
+    verLbl.Font = FONT_DISPLAY; verLbl.TextSize = 10; verLbl.ZIndex = 12; verLbl.Parent = verBadge
 
-local tierBadge = Instance.new("Frame")
-tierBadge.Size = UDim2.new(0,110,0,20); tierBadge.Position = UDim2.new(1,-276,0,28)
-tierBadge.BackgroundColor3 = T.ok; tierBadge.BackgroundTransparency = 0.15
-tierBadge.BorderSizePixel = 0; tierBadge.ZIndex = 11; tierBadge.Visible = false
-tierBadge.Parent = header
-corner(tierBadge, 6); stroke(tierBadge, T.okHi, 1, 0.4)
+    onTheme(function()
+        verStroke.Color = T.accent
+        verLbl.TextColor3 = T.accentHi
+    end)
 
-local tierLbl = Instance.new("TextLabel")
-tierLbl.Size = UDim2.new(1,0,1,0); tierLbl.BackgroundTransparency = 1
-tierLbl.Text = "OWNER"; tierLbl.TextColor3 = Color3.fromRGB(5,30,15)
-tierLbl.Font = FONT_DISPLAY; tierLbl.TextSize = 10; tierLbl.ZIndex = 12
-tierLbl.Parent = tierBadge
+    local minimize = Instance.new("TextButton")
+    minimize.Size = UDim2.new(0, 32, 0, 32)
+    minimize.Position = UDim2.new(1, -92, 0, 22)
+    minimize.BackgroundColor3 = T.surface3
+    minimize.BackgroundTransparency = 0.5
+    minimize.BorderSizePixel = 0
+    minimize.Text = "−"
+    minimize.TextColor3 = T.text1
+    minimize.Font = FONT_DISPLAY
+    minimize.TextSize = 20
+    minimize.AutoButtonColor = false
+    minimize.ZIndex = 12
+    minimize.Parent = header
+    corner(minimize, 8)
 
-local function applyTierBadge()
-    if userTier == "owner" then
-        tierBadge.Visible = true; tierBadge.BackgroundColor3 = T.ok
-        tierLbl.Text = "OWNER"; tierLbl.TextColor3 = Color3.fromRGB(5,30,15)
-    elseif userTier == "owner_friend" then
-        tierBadge.Visible = true; tierBadge.BackgroundColor3 = T.warn
-        tierLbl.Text = "OWNER_FRIENDS"; tierLbl.TextColor3 = Color3.fromRGB(40,28,0)
-    else
-        tierBadge.Visible = false
-    end
+    minimize.MouseEnter:Connect(function()
+        tween(minimize, { BackgroundColor3 = T.accent, BackgroundTransparency = 0, TextColor3 = T.text0 }, 0.2)
+    end)
+    minimize.MouseLeave:Connect(function()
+        tween(minimize, { BackgroundColor3 = T.surface3, BackgroundTransparency = 0.5, TextColor3 = T.text1 }, 0.2)
+    end)
+
+    local close = Instance.new("TextButton")
+    close.Size = UDim2.new(0, 32, 0, 32)
+    close.Position = UDim2.new(1, -48, 0, 22)
+    close.BackgroundColor3 = T.surface3
+    close.BackgroundTransparency = 0.5
+    close.BorderSizePixel = 0
+    close.Text = "×"
+    close.TextColor3 = T.text1
+    close.Font = FONT_DISPLAY
+    close.TextSize = 20
+    close.AutoButtonColor = false
+    close.ZIndex = 12
+    close.Parent = header
+    corner(close, 8)
+
+    close.MouseEnter:Connect(function()
+        tween(close, { BackgroundColor3 = T.danger, BackgroundTransparency = 0, TextColor3 = T.text0 }, 0.2)
+    end)
+    close.MouseLeave:Connect(function()
+        tween(close, { BackgroundColor3 = T.surface3, BackgroundTransparency = 0.5, TextColor3 = T.text1 }, 0.2)
+    end)
+    close.MouseButton1Click:Connect(function() gui:Destroy() end)
 end
-
-local verBadge = Instance.new("Frame")
-verBadge.Size = UDim2.new(0,50,0,20); verBadge.Position = UDim2.new(1,-152,0,28)
-verBadge.BackgroundColor3 = T.surface3; verBadge.BackgroundTransparency = 0.4
-verBadge.BorderSizePixel = 0; verBadge.ZIndex = 11; verBadge.Parent = header
-corner(verBadge, 6); local verStroke = stroke(verBadge, T.accent, 1, 0.7)
-
-local verLbl = Instance.new("TextLabel")
-verLbl.Size = UDim2.new(1,0,1,0); verLbl.BackgroundTransparency = 1
-verLbl.Text = "v6.0"; verLbl.TextColor3 = T.accentHi
-verLbl.Font = FONT_DISPLAY; verLbl.TextSize = 10; verLbl.ZIndex = 12; verLbl.Parent = verBadge
-
-onTheme(function()
-    verStroke.Color = T.accent
-    verLbl.TextColor3 = T.accentHi
-end)
-
--- minimize
-local minimize = Instance.new("TextButton")
-minimize.Size = UDim2.new(0, 32, 0, 32)
-minimize.Position = UDim2.new(1, -92, 0, 22)
-minimize.BackgroundColor3 = T.surface3
-minimize.BackgroundTransparency = 0.5
-minimize.BorderSizePixel = 0
-minimize.Text = "−"
-minimize.TextColor3 = T.text1
-minimize.Font = FONT_DISPLAY
-minimize.TextSize = 20
-minimize.AutoButtonColor = false
-minimize.ZIndex = 12
-minimize.Parent = header
-corner(minimize, 8)
-
-minimize.MouseEnter:Connect(function()
-    tween(minimize, { BackgroundColor3 = T.accent, BackgroundTransparency = 0, TextColor3 = T.text0 }, 0.2)
-end)
-minimize.MouseLeave:Connect(function()
-    tween(minimize, { BackgroundColor3 = T.surface3, BackgroundTransparency = 0.5, TextColor3 = T.text1 }, 0.2)
-end)
-
--- close
-local close = Instance.new("TextButton")
-close.Size = UDim2.new(0, 32, 0, 32)
-close.Position = UDim2.new(1, -48, 0, 22)
-close.BackgroundColor3 = T.surface3
-close.BackgroundTransparency = 0.5
-close.BorderSizePixel = 0
-close.Text = "×"
-close.TextColor3 = T.text1
-close.Font = FONT_DISPLAY
-close.TextSize = 20
-close.AutoButtonColor = false
-close.ZIndex = 12
-close.Parent = header
-corner(close, 8)
-
-close.MouseEnter:Connect(function()
-    tween(close, { BackgroundColor3 = T.danger, BackgroundTransparency = 0, TextColor3 = T.text0 }, 0.2)
-end)
-close.MouseLeave:Connect(function()
-    tween(close, { BackgroundColor3 = T.surface3, BackgroundTransparency = 0.5, TextColor3 = T.text1 }, 0.2)
-end)
-close.MouseButton1Click:Connect(function() gui:Destroy() end)
 
 -- =========================================================
 --  SEARCH BAR
@@ -689,7 +696,7 @@ searchClear.MouseLeave:Connect(function() searchClear.TextColor3 = T.text2 end)
 searchClear.MouseButton1Click:Connect(function() searchInput.Text = "" end)
 
 -- =========================================================
---  TAB BAR — 8 tabs
+--  TAB BAR
 -- =========================================================
 
 local TAB_Y = 118
@@ -775,14 +782,17 @@ for _, tab in ipairs(TABS) do
 end
 
 -- =========================================================
---  REGISTRIES
+--  REGISTRIES + forward declarations
 -- =========================================================
 
-local registry   = {}
-local builtin    = {}
-local favOn      = {}
-local favOrder   = {}
-local userScripts = {}   -- list of {name, icon, url, sm, ui, key}
+local registry    = {}
+local builtin     = {}
+local favOn       = {}
+local favOrder    = {}
+local userScripts = {}
+local rgbUI
+local themeButtons
+applyTierBadge = function() end
 
 -- =========================================================
 --  FAVES TAB
@@ -909,7 +919,7 @@ local function toggleFavorite(key)
 end
 
 -- =========================================================
---  STATE MACHINE (defined early — used by tiles)
+--  STATE MACHINE
 -- =========================================================
 
 local S = { READY = "READY", LOADING = "LOADING", LOADED = "LOADED", ERROR = "ERROR" }
@@ -965,7 +975,6 @@ local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHin
         loaded = function() setState(S.LOADED) end,
         error = function() setState(S.ERROR) end,
         refresh = function()
-            -- re-apply colors for current state without touching dots task
             if state == S.READY then
                 setColors(BTN.base1, BTN.base2, BTN.hov1, BTN.hov2, 0.75)
                 ui.hint.TextColor3 = T.text2
@@ -986,7 +995,7 @@ local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHin
 end
 
 -- =========================================================
---  GRID TILE — RANSOM STYLE horizontal
+--  GRID TILE
 -- =========================================================
 
 local GRID = { cols = 3, pad = 20, gap = 12, tileW = 213, tileH = 110, rowGap = 12 }
@@ -1097,7 +1106,6 @@ local function makeGridTile(parent, index, iconText, labelText, hintText, unique
     star.MouseEnter:Connect(function() tween(star, { BackgroundTransparency = 0 }, 0.15) end)
     star.MouseLeave:Connect(function() tween(star, { BackgroundTransparency = 0.25 }, 0.15) end)
 
-    -- delete button (only for user scripts)
     if onDelete then
         local del = Instance.new("TextButton")
         del.Size = UDim2.new(0, 24, 0, 24); del.Position = UDim2.new(1, -56, 0, 6)
@@ -1170,1340 +1178,1336 @@ end
 --  PAGE: MAIN
 -- =========================================================
 
-local uiIY   = makeGridTile(pages.MAIN, 1, "$", "INFINITE YIELD", "> click to inject", "iy")
-local smIY   = makeStateMachine(uiIY, "INFINITE YIELD", "> click to inject", "> fetching payload...", "> running", "> load failed")
-builtin.iy = { ui = uiIY, sm = smIY, url = URLS.IY, label = "INFINITE YIELD", icon = "$" }
-builtin.iy.run = function() doInject(smIY, URLS.IY, "Infinite Yield") end
+do
+    local uiIY   = makeGridTile(pages.MAIN, 1, "$", "INFINITE YIELD", "> click to inject", "iy")
+    local smIY   = makeStateMachine(uiIY, "INFINITE YIELD", "> click to inject", "> fetching payload...", "> running", "> load failed")
+    builtin.iy = { ui = uiIY, sm = smIY, url = URLS.IY, label = "INFINITE YIELD", icon = "$" }
+    builtin.iy.run = function() doInject(smIY, URLS.IY, "Infinite Yield") end
 
-local uiFly  = makeGridTile(pages.MAIN, 2, "~", "INVISIBLE FLY", "> click to inject", "fly")
-local smFly  = makeStateMachine(uiFly, "INVISIBLE FLY", "> click to inject", "> loading fly script...", "> active · H to fly", "> load failed")
-builtin.fly = { ui = uiFly, sm = smFly, url = URLS.FLY, label = "INVISIBLE FLY", icon = "~" }
-builtin.fly.run = function() doInject(smFly, URLS.FLY, "Invisible Fly") end
+    local uiFly  = makeGridTile(pages.MAIN, 2, "~", "INVISIBLE FLY", "> click to inject", "fly")
+    local smFly  = makeStateMachine(uiFly, "INVISIBLE FLY", "> click to inject", "> loading fly script...", "> active · H to fly", "> load failed")
+    builtin.fly = { ui = uiFly, sm = smFly, url = URLS.FLY, label = "INVISIBLE FLY", icon = "~" }
+    builtin.fly.run = function() doInject(smFly, URLS.FLY, "Invisible Fly") end
 
-local uiSkin = makeGridTile(pages.MAIN, 3, "@", "SKIN STEALER", "> click to inject", "skin")
-local smSkin = makeStateMachine(uiSkin, "SKIN STEALER", "> click to inject", "> loading stealer...", "> active", "> load failed")
-builtin.skin = { ui = uiSkin, sm = smSkin, url = URLS.SKINSTEALER, label = "SKIN STEALER", icon = "@" }
-builtin.skin.run = function() doInject(smSkin, URLS.SKINSTEALER, "Skin Stealer") end
+    local uiSkin = makeGridTile(pages.MAIN, 3, "@", "SKIN STEALER", "> click to inject", "skin")
+    local smSkin = makeStateMachine(uiSkin, "SKIN STEALER", "> click to inject", "> loading stealer...", "> active", "> load failed")
+    builtin.skin = { ui = uiSkin, sm = smSkin, url = URLS.SKINSTEALER, label = "SKIN STEALER", icon = "@" }
+    builtin.skin.run = function() doInject(smSkin, URLS.SKINSTEALER, "Skin Stealer") end
 
-uiIY.button.MouseButton1Click:Connect(builtin.iy.run)
-uiFly.button.MouseButton1Click:Connect(builtin.fly.run)
-uiSkin.button.MouseButton1Click:Connect(builtin.skin.run)
+    uiIY.button.MouseButton1Click:Connect(builtin.iy.run)
+    uiFly.button.MouseButton1Click:Connect(builtin.fly.run)
+    uiSkin.button.MouseButton1Click:Connect(builtin.skin.run)
+end
 
 -- =========================================================
 --  PAGE: DOORS
 -- =========================================================
 
-local uiAbysall = makeGridTile(pages.DOORS, 1, "◈", "ABYSALL HUB", "> click to inject", "abysall")
-local smAbysall = makeStateMachine(uiAbysall, "ABYSALL HUB", "> click to inject", "> loading Abysall...", "> active", "> load failed")
-builtin.abysall = { ui = uiAbysall, sm = smAbysall, url = URLS.ABYSALL, label = "ABYSALL HUB", icon = "◈" }
-builtin.abysall.run = function() doInject(smAbysall, URLS.ABYSALL, "Abysall Hub") end
+do
+    local uiAbysall = makeGridTile(pages.DOORS, 1, "◈", "ABYSALL HUB", "> click to inject", "abysall")
+    local smAbysall = makeStateMachine(uiAbysall, "ABYSALL HUB", "> click to inject", "> loading Abysall...", "> active", "> load failed")
+    builtin.abysall = { ui = uiAbysall, sm = smAbysall, url = URLS.ABYSALL, label = "ABYSALL HUB", icon = "◈" }
+    builtin.abysall.run = function() doInject(smAbysall, URLS.ABYSALL, "Abysall Hub") end
 
-local uiCheesy = makeGridTile(pages.DOORS, 2, "◆", "CHEESY HUB", "> click to inject", "cheesy")
-local smCheesy = makeStateMachine(uiCheesy, "CHEESY HUB", "> click to inject", "> loading Cheesy...", "> active", "> load failed")
-builtin.cheesy = { ui = uiCheesy, sm = smCheesy, url = URLS.CHEESY, label = "CHEESY HUB", icon = "◆" }
-builtin.cheesy.run = function() doInject(smCheesy, URLS.CHEESY, "Cheesy Hub") end
+    local uiCheesy = makeGridTile(pages.DOORS, 2, "◆", "CHEESY HUB", "> click to inject", "cheesy")
+    local smCheesy = makeStateMachine(uiCheesy, "CHEESY HUB", "> click to inject", "> loading Cheesy...", "> active", "> load failed")
+    builtin.cheesy = { ui = uiCheesy, sm = smCheesy, url = URLS.CHEESY, label = "CHEESY HUB", icon = "◆" }
+    builtin.cheesy.run = function() doInject(smCheesy, URLS.CHEESY, "Cheesy Hub") end
 
-local uiMSDoors = makeGridTile(pages.DOORS, 3, "§", "MS DOORS", "> click to inject", "msdoors")
-local smMSDoors = makeStateMachine(uiMSDoors, "MS DOORS", "> click to inject", "> loading MS Doors...", "> active", "> load failed")
-builtin.msdoors = { ui = uiMSDoors, sm = smMSDoors, url = URLS.MSDOORS, label = "MS DOORS", icon = "§" }
-builtin.msdoors.run = function() doInject(smMSDoors, URLS.MSDOORS, "MS Doors") end
+    local uiMSDoors = makeGridTile(pages.DOORS, 3, "§", "MS DOORS", "> click to inject", "msdoors")
+    local smMSDoors = makeStateMachine(uiMSDoors, "MS DOORS", "> click to inject", "> loading MS Doors...", "> active", "> load failed")
+    builtin.msdoors = { ui = uiMSDoors, sm = smMSDoors, url = URLS.MSDOORS, label = "MS DOORS", icon = "§" }
+    builtin.msdoors.run = function() doInject(smMSDoors, URLS.MSDOORS, "MS Doors") end
 
-uiAbysall.button.MouseButton1Click:Connect(builtin.abysall.run)
-uiCheesy.button.MouseButton1Click:Connect(builtin.cheesy.run)
-uiMSDoors.button.MouseButton1Click:Connect(builtin.msdoors.run)
+    uiAbysall.button.MouseButton1Click:Connect(builtin.abysall.run)
+    uiCheesy.button.MouseButton1Click:Connect(builtin.cheesy.run)
+    uiMSDoors.button.MouseButton1Click:Connect(builtin.msdoors.run)
+end
 
 -- =========================================================
 --  PAGE: TOOLS
 -- =========================================================
 
-local uiDex = makeGridTile(pages.TOOLS, 1, "◇", "DEX", "> click to inject", "dex")
-local smDex = makeStateMachine(uiDex, "DEX", "> click to inject", "> loading Dex...", "> active", "> load failed")
-builtin.dex = { ui = uiDex, sm = smDex, url = URLS.DEX, label = "DEX", icon = "◇" }
-builtin.dex.run = function() doInject(smDex, URLS.DEX, "Dex") end
+do
+    local uiDex = makeGridTile(pages.TOOLS, 1, "◇", "DEX", "> click to inject", "dex")
+    local smDex = makeStateMachine(uiDex, "DEX", "> click to inject", "> loading Dex...", "> active", "> load failed")
+    builtin.dex = { ui = uiDex, sm = smDex, url = URLS.DEX, label = "DEX", icon = "◇" }
+    builtin.dex.run = function() doInject(smDex, URLS.DEX, "Dex") end
 
-local uiHydro = makeGridTile(pages.TOOLS, 2, "◐", "HYDROXIDE", "> click to inject", "hydro")
-local smHydro = makeStateMachine(uiHydro, "HYDROXIDE", "> click to inject", "> loading Hydroxide...", "> active", "> load failed")
-builtin.hydro = { ui = uiHydro, sm = smHydro, url = URLS.HYDROXIDE, label = "HYDROXIDE", icon = "◐" }
-builtin.hydro.run = function() doInject(smHydro, URLS.HYDROXIDE, "Hydroxide") end
+    local uiHydro = makeGridTile(pages.TOOLS, 2, "◐", "HYDROXIDE", "> click to inject", "hydro")
+    local smHydro = makeStateMachine(uiHydro, "HYDROXIDE", "> click to inject", "> loading Hydroxide...", "> active", "> load failed")
+    builtin.hydro = { ui = uiHydro, sm = smHydro, url = URLS.HYDROXIDE, label = "HYDROXIDE", icon = "◐" }
+    builtin.hydro.run = function() doInject(smHydro, URLS.HYDROXIDE, "Hydroxide") end
 
-local uiCMDX = makeGridTile(pages.TOOLS, 3, "▶", "CMD-X", "> click to inject", "cmdx")
-local smCMDX = makeStateMachine(uiCMDX, "CMD-X", "> click to inject", "> loading CMD-X...", "> active", "> load failed")
-builtin.cmdx = { ui = uiCMDX, sm = smCMDX, url = URLS.CMDX, label = "CMD-X", icon = "▶" }
-builtin.cmdx.run = function() doInject(smCMDX, URLS.CMDX, "CMD-X") end
+    local uiCMDX = makeGridTile(pages.TOOLS, 3, "▶", "CMD-X", "> click to inject", "cmdx")
+    local smCMDX = makeStateMachine(uiCMDX, "CMD-X", "> click to inject", "> loading CMD-X...", "> active", "> load failed")
+    builtin.cmdx = { ui = uiCMDX, sm = smCMDX, url = URLS.CMDX, label = "CMD-X", icon = "▶" }
+    builtin.cmdx.run = function() doInject(smCMDX, URLS.CMDX, "CMD-X") end
 
-uiDex.button.MouseButton1Click:Connect(builtin.dex.run)
-uiHydro.button.MouseButton1Click:Connect(builtin.hydro.run)
-uiCMDX.button.MouseButton1Click:Connect(builtin.cmdx.run)
+    uiDex.button.MouseButton1Click:Connect(builtin.dex.run)
+    uiHydro.button.MouseButton1Click:Connect(builtin.hydro.run)
+    uiCMDX.button.MouseButton1Click:Connect(builtin.cmdx.run)
+end
 
 -- =========================================================
 --  PAGE: UTILITY
 -- =========================================================
 
-local uiRejoin = makeGridTile(pages.UTILITY, 1, "↻", "REJOIN", "> same server", "rejoin")
-local smRejoin = makeStateMachine(uiRejoin, "REJOIN", "> same server", "> rejoining...", "> done", "> failed")
-local function runRejoin()
-    if smRejoin.get() == S.LOADING then return end
-    smRejoin.loading()
-    task.spawn(function()
-        local ok, err = pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
-        end)
-        if ok then smRejoin.loaded()
-        else warn("[A-90 HUB] rejoin failed: " .. tostring(err)); smRejoin.error()
-            task.wait(2); if smRejoin.get() == S.ERROR then smRejoin.ready() end
-        end
-    end)
-end
-builtin.rejoin = { ui = uiRejoin, sm = smRejoin, label = "REJOIN", icon = "↻", run = runRejoin }
-uiRejoin.button.MouseButton1Click:Connect(runRejoin)
-
-local uiHop = makeGridTile(pages.UTILITY, 2, "⇄", "SERVER HOP", "> find new server", "hop")
-local smHop = makeStateMachine(uiHop, "SERVER HOP", "> find new server", "> searching...", "> joined", "> failed")
-local function runHop()
-    if smHop.get() == S.LOADING then return end
-    smHop.loading()
-    task.spawn(function()
-        local ok, err = pcall(function()
-            local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
-            local raw = game:HttpGet(url)
-            local data = HttpService:JSONDecode(raw)
-            local list = data and data.data or {}
-            local candidates = {}
-            for _, srv in ipairs(list) do
-                if srv.id ~= game.JobId and srv.playing < srv.maxPlayers then
-                    table.insert(candidates, srv.id)
-                end
+do
+    local uiRejoin = makeGridTile(pages.UTILITY, 1, "↻", "REJOIN", "> same server", "rejoin")
+    local smRejoin = makeStateMachine(uiRejoin, "REJOIN", "> same server", "> rejoining...", "> done", "> failed")
+    local function runRejoin()
+        if smRejoin.get() == S.LOADING then return end
+        smRejoin.loading()
+        task.spawn(function()
+            local ok, err = pcall(function()
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
+            end)
+            if ok then smRejoin.loaded()
+            else warn("[A-90 HUB] rejoin failed: " .. tostring(err)); smRejoin.error()
+                task.wait(2); if smRejoin.get() == S.ERROR then smRejoin.ready() end
             end
-            if #candidates == 0 then error("no available servers") end
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, candidates[math.random(1,#candidates)], LP)
         end)
-        if ok then smHop.loaded()
-        else warn("[A-90 HUB] hop failed: " .. tostring(err)); smHop.error()
-            task.wait(3); if smHop.get() == S.ERROR then smHop.ready() end
-        end
-    end)
-end
-builtin.hop = { ui = uiHop, sm = smHop, label = "SERVER HOP", icon = "⇄", run = runHop }
-uiHop.button.MouseButton1Click:Connect(runHop)
-
-local antiAfkOn = false
-local antiAfkConn
-local uiAntiAfk = makeGridTile(pages.UTILITY, 3, "☯", "ANTI-AFK", "> toggle", "antiafk")
-local function runAntiAfk()
-    antiAfkOn = not antiAfkOn
-    if antiAfkOn then
-        uiAntiAfk.btnText.Text = "ANTI-AFK: ON"
-        uiAntiAfk.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, T.ok), ColorSequenceKeypoint.new(1, Color3.fromRGB(20,80,45)) })
-        uiAntiAfk.ovGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, T.okHi), ColorSequenceKeypoint.new(1, T.ok) })
-        uiAntiAfk.hint.Text = "> running"; uiAntiAfk.hint.TextColor3 = T.ok
-        antiAfkConn = LP.Idled:Connect(function()
-            pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
-        end)
-    else
-        uiAntiAfk.btnText.Text = "ANTI-AFK"
-        uiAntiAfk.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, BTN.base1), ColorSequenceKeypoint.new(1, BTN.base2) })
-        uiAntiAfk.ovGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, BTN.hov1), ColorSequenceKeypoint.new(1, BTN.hov2) })
-        uiAntiAfk.hint.Text = "> toggle"; uiAntiAfk.hint.TextColor3 = T.text2
-        if antiAfkConn then antiAfkConn:Disconnect(); antiAfkConn = nil end
     end
+    builtin.rejoin = { ui = uiRejoin, sm = smRejoin, label = "REJOIN", icon = "↻", run = runRejoin }
+    uiRejoin.button.MouseButton1Click:Connect(runRejoin)
 end
-builtin.antiafk = { ui = uiAntiAfk, sm = nil, label = "ANTI-AFK", icon = "☯", run = runAntiAfk }
-uiAntiAfk.button.MouseButton1Click:Connect(runAntiAfk)
+
+do
+    local uiHop = makeGridTile(pages.UTILITY, 2, "⇄", "SERVER HOP", "> find new server", "hop")
+    local smHop = makeStateMachine(uiHop, "SERVER HOP", "> find new server", "> searching...", "> joined", "> failed")
+    local function runHop()
+        if smHop.get() == S.LOADING then return end
+        smHop.loading()
+        task.spawn(function()
+            local ok, err = pcall(function()
+                local url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+                local raw = game:HttpGet(url)
+                local data = HttpService:JSONDecode(raw)
+                local list = data and data.data or {}
+                local candidates = {}
+                for _, srv in ipairs(list) do
+                    if srv.id ~= game.JobId and srv.playing < srv.maxPlayers then
+                        table.insert(candidates, srv.id)
+                    end
+                end
+                if #candidates == 0 then error("no available servers") end
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, candidates[math.random(1,#candidates)], LP)
+            end)
+            if ok then smHop.loaded()
+            else warn("[A-90 HUB] hop failed: " .. tostring(err)); smHop.error()
+                task.wait(3); if smHop.get() == S.ERROR then smHop.ready() end
+            end
+        end)
+    end
+    builtin.hop = { ui = uiHop, sm = smHop, label = "SERVER HOP", icon = "⇄", run = runHop }
+    uiHop.button.MouseButton1Click:Connect(runHop)
+end
+
+do
+    local antiAfkOn = false
+    local antiAfkConn
+    local uiAntiAfk = makeGridTile(pages.UTILITY, 3, "☯", "ANTI-AFK", "> toggle", "antiafk")
+    local function runAntiAfk()
+        antiAfkOn = not antiAfkOn
+        if antiAfkOn then
+            uiAntiAfk.btnText.Text = "ANTI-AFK: ON"
+            uiAntiAfk.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, T.ok), ColorSequenceKeypoint.new(1, Color3.fromRGB(20,80,45)) })
+            uiAntiAfk.ovGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, T.okHi), ColorSequenceKeypoint.new(1, T.ok) })
+            uiAntiAfk.hint.Text = "> running"; uiAntiAfk.hint.TextColor3 = T.ok
+            antiAfkConn = LP.Idled:Connect(function()
+                pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
+            end)
+        else
+            uiAntiAfk.btnText.Text = "ANTI-AFK"
+            uiAntiAfk.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, BTN.base1), ColorSequenceKeypoint.new(1, BTN.base2) })
+            uiAntiAfk.ovGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, BTN.hov1), ColorSequenceKeypoint.new(1, BTN.hov2) })
+            uiAntiAfk.hint.Text = "> toggle"; uiAntiAfk.hint.TextColor3 = T.text2
+            if antiAfkConn then antiAfkConn:Disconnect(); antiAfkConn = nil end
+        end
+    end
+    builtin.antiafk = { ui = uiAntiAfk, sm = nil, label = "ANTI-AFK", icon = "☯", run = runAntiAfk }
+    uiAntiAfk.button.MouseButton1Click:Connect(runAntiAfk)
+end
 
 -- =========================================================
 --  PAGE: CUSTOM + HISTORY
 -- =========================================================
 
-local customWrap = Instance.new("Frame")
-customWrap.Size = UDim2.new(1,-40,1,-8); customWrap.Position = UDim2.new(0,20,0,4)
-customWrap.BackgroundTransparency = 1; customWrap.ZIndex = 8; customWrap.Parent = pages.CUSTOM
-
-local customInfo = Instance.new("TextLabel")
-customInfo.Size = UDim2.new(1,0,0,18); customInfo.BackgroundTransparency = 1
-customInfo.Text = "PASTE SCRIPT URL"; customInfo.TextColor3 = T.text2
-customInfo.Font = FONT_DISPLAY; customInfo.TextSize = 11
-customInfo.TextXAlignment = Enum.TextXAlignment.Left; customInfo.ZIndex = 9; customInfo.Parent = customWrap
-
-local urlBox = Instance.new("Frame")
-urlBox.Size = UDim2.new(1,0,0,42); urlBox.Position = UDim2.new(0,0,0,22)
-urlBox.BackgroundColor3 = T.surface2; urlBox.BackgroundTransparency = 0.3
-urlBox.BorderSizePixel = 0; urlBox.ZIndex = 8; urlBox.Parent = customWrap
-corner(urlBox, 10); local urlBoxStroke = stroke(urlBox, T.accent, 1, 0.55)
-
-local urlPrefix = Instance.new("TextLabel")
-urlPrefix.Size = UDim2.new(0,26,1,0); urlPrefix.Position = UDim2.new(0,12,0,0)
-urlPrefix.BackgroundTransparency = 1; urlPrefix.Text = ">"
-urlPrefix.TextColor3 = T.accentHi; urlPrefix.Font = FONT_DISPLAY
-urlPrefix.TextSize = 14; urlPrefix.ZIndex = 9; urlPrefix.Parent = urlBox
-
-onTheme(function()
-    urlBoxStroke.Color = T.accent
-    urlPrefix.TextColor3 = T.accentHi
-end)
-
-local urlInput = Instance.new("TextBox")
-urlInput.Size = UDim2.new(1,-40,1,0); urlInput.Position = UDim2.new(0,38,0,0)
-urlInput.BackgroundTransparency = 1; urlInput.Text = ""
-urlInput.PlaceholderText = "https://...script.lua"
-urlInput.PlaceholderColor3 = T.text3; urlInput.TextColor3 = T.text0
-urlInput.Font = FONT_DISPLAY; urlInput.TextSize = 11
-urlInput.TextXAlignment = Enum.TextXAlignment.Left
-urlInput.ClearTextOnFocus = false; urlInput.ZIndex = 9; urlInput.Parent = urlBox
-
-local loadBtn = Instance.new("TextButton")
-loadBtn.Size = UDim2.new(1,0,0,44); loadBtn.Position = UDim2.new(0,0,0,72)
-loadBtn.BackgroundColor3 = T.accent; loadBtn.BorderSizePixel = 0
-loadBtn.Text = "INJECT CUSTOM SCRIPT"; loadBtn.TextColor3 = Color3.new(1,1,1)
-loadBtn.Font = FONT_DISPLAY; loadBtn.TextSize = 14; loadBtn.AutoButtonColor = false
-loadBtn.ClipsDescendants = true; loadBtn.ZIndex = 9; loadBtn.Parent = customWrap
-corner(loadBtn, 10); local loadBtnGrad = grad(loadBtn, { BTN.base1, BTN.base2 }, 135)
-local loadStroke = stroke(loadBtn, Color3.new(1,1,1), 1, 0.75)
-
-onTheme(function()
-    loadBtnGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, T.accent),
-        ColorSequenceKeypoint.new(1, T.accentDeep),
-    })
-end)
-
-local statusLbl = Instance.new("TextLabel")
-statusLbl.Size = UDim2.new(1,0,0,16); statusLbl.Position = UDim2.new(0,0,0,120)
-statusLbl.BackgroundTransparency = 1; statusLbl.Text = ""
-statusLbl.TextColor3 = T.text2; statusLbl.Font = FONT_DISPLAY
-statusLbl.TextSize = 11; statusLbl.TextXAlignment = Enum.TextXAlignment.Left
-statusLbl.ZIndex = 9; statusLbl.Parent = customWrap
-
-local histLbl = Instance.new("TextLabel")
-histLbl.Size = UDim2.new(1,0,0,16); histLbl.Position = UDim2.new(0,0,0,142)
-histLbl.BackgroundTransparency = 1; histLbl.Text = "RECENT INJECTS"
-histLbl.TextColor3 = T.text3; histLbl.Font = FONT_DISPLAY
-histLbl.TextSize = 10; histLbl.TextXAlignment = Enum.TextXAlignment.Left
-histLbl.ZIndex = 9; histLbl.Parent = customWrap
-
-local histScroll = Instance.new("ScrollingFrame")
-histScroll.Size = UDim2.new(1,0,0,150); histScroll.Position = UDim2.new(0,0,0,160)
-histScroll.BackgroundColor3 = T.surface0; histScroll.BackgroundTransparency = 0.4
-histScroll.BorderSizePixel = 0; histScroll.ScrollBarThickness = 3
-histScroll.ScrollBarImageColor3 = T.accent; histScroll.CanvasSize = UDim2.new(0,0,0,0)
-histScroll.ZIndex = 8; histScroll.Parent = customWrap
-corner(histScroll, 8)
-
-onTheme(function() histScroll.ScrollBarImageColor3 = T.accent end)
-
-local histEmpty = Instance.new("TextLabel")
-histEmpty.Size = UDim2.new(1,0,0,30); histEmpty.Position = UDim2.new(0,0,0,8)
-histEmpty.BackgroundTransparency = 1
-histEmpty.Text = "> no history yet"
-histEmpty.TextColor3 = T.text3; histEmpty.Font = FONT_DISPLAY
-histEmpty.TextSize = 11; histEmpty.ZIndex = 9; histEmpty.Parent = histScroll
-
 local history = {}
+local urlInput
+local statusLbl
 
-local function saveHistory()
-    writeJSON(HIST_FILE, { items = history })
-end
+do
+    local customWrap = Instance.new("Frame")
+    customWrap.Size = UDim2.new(1,-40,1,-8); customWrap.Position = UDim2.new(0,20,0,4)
+    customWrap.BackgroundTransparency = 1; customWrap.ZIndex = 8; customWrap.Parent = pages.CUSTOM
 
-local function renderHistory()
-    for _, c in ipairs(histScroll:GetChildren()) do
-        if c ~= histEmpty then c:Destroy() end
+    local customInfo = Instance.new("TextLabel")
+    customInfo.Size = UDim2.new(1,0,0,18); customInfo.BackgroundTransparency = 1
+    customInfo.Text = "PASTE SCRIPT URL"; customInfo.TextColor3 = T.text2
+    customInfo.Font = FONT_DISPLAY; customInfo.TextSize = 11
+    customInfo.TextXAlignment = Enum.TextXAlignment.Left; customInfo.ZIndex = 9; customInfo.Parent = customWrap
+
+    local urlBox = Instance.new("Frame")
+    urlBox.Size = UDim2.new(1,0,0,42); urlBox.Position = UDim2.new(0,0,0,22)
+    urlBox.BackgroundColor3 = T.surface2; urlBox.BackgroundTransparency = 0.3
+    urlBox.BorderSizePixel = 0; urlBox.ZIndex = 8; urlBox.Parent = customWrap
+    corner(urlBox, 10); local urlBoxStroke = stroke(urlBox, T.accent, 1, 0.55)
+
+    local urlPrefix = Instance.new("TextLabel")
+    urlPrefix.Size = UDim2.new(0,26,1,0); urlPrefix.Position = UDim2.new(0,12,0,0)
+    urlPrefix.BackgroundTransparency = 1; urlPrefix.Text = ">"
+    urlPrefix.TextColor3 = T.accentHi; urlPrefix.Font = FONT_DISPLAY
+    urlPrefix.TextSize = 14; urlPrefix.ZIndex = 9; urlPrefix.Parent = urlBox
+
+    onTheme(function()
+        urlBoxStroke.Color = T.accent
+        urlPrefix.TextColor3 = T.accentHi
+    end)
+
+    urlInput = Instance.new("TextBox")
+    urlInput.Size = UDim2.new(1,-40,1,0); urlInput.Position = UDim2.new(0,38,0,0)
+    urlInput.BackgroundTransparency = 1; urlInput.Text = ""
+    urlInput.PlaceholderText = "https://...script.lua"
+    urlInput.PlaceholderColor3 = T.text3; urlInput.TextColor3 = T.text0
+    urlInput.Font = FONT_DISPLAY; urlInput.TextSize = 11
+    urlInput.TextXAlignment = Enum.TextXAlignment.Left
+    urlInput.ClearTextOnFocus = false; urlInput.ZIndex = 9; urlInput.Parent = urlBox
+
+    local loadBtn = Instance.new("TextButton")
+    loadBtn.Size = UDim2.new(1,0,0,44); loadBtn.Position = UDim2.new(0,0,0,72)
+    loadBtn.BackgroundColor3 = T.accent; loadBtn.BorderSizePixel = 0
+    loadBtn.Text = "INJECT CUSTOM SCRIPT"; loadBtn.TextColor3 = Color3.new(1,1,1)
+    loadBtn.Font = FONT_DISPLAY; loadBtn.TextSize = 14; loadBtn.AutoButtonColor = false
+    loadBtn.ClipsDescendants = true; loadBtn.ZIndex = 9; loadBtn.Parent = customWrap
+    corner(loadBtn, 10); local loadBtnGrad = grad(loadBtn, { BTN.base1, BTN.base2 }, 135)
+    stroke(loadBtn, Color3.new(1,1,1), 1, 0.75)
+
+    onTheme(function()
+        loadBtnGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, T.accent),
+            ColorSequenceKeypoint.new(1, T.accentDeep),
+        })
+    end)
+
+    statusLbl = Instance.new("TextLabel")
+    statusLbl.Size = UDim2.new(1,0,0,16); statusLbl.Position = UDim2.new(0,0,0,120)
+    statusLbl.BackgroundTransparency = 1; statusLbl.Text = ""
+    statusLbl.TextColor3 = T.text2; statusLbl.Font = FONT_DISPLAY
+    statusLbl.TextSize = 11; statusLbl.TextXAlignment = Enum.TextXAlignment.Left
+    statusLbl.ZIndex = 9; statusLbl.Parent = customWrap
+
+    local histLbl = Instance.new("TextLabel")
+    histLbl.Size = UDim2.new(1,0,0,16); histLbl.Position = UDim2.new(0,0,0,142)
+    histLbl.BackgroundTransparency = 1; histLbl.Text = "RECENT INJECTS"
+    histLbl.TextColor3 = T.text3; histLbl.Font = FONT_DISPLAY
+    histLbl.TextSize = 10; histLbl.TextXAlignment = Enum.TextXAlignment.Left
+    histLbl.ZIndex = 9; histLbl.Parent = customWrap
+
+    local histScroll = Instance.new("ScrollingFrame")
+    histScroll.Size = UDim2.new(1,0,0,150); histScroll.Position = UDim2.new(0,0,0,160)
+    histScroll.BackgroundColor3 = T.surface0; histScroll.BackgroundTransparency = 0.4
+    histScroll.BorderSizePixel = 0; histScroll.ScrollBarThickness = 3
+    histScroll.ScrollBarImageColor3 = T.accent; histScroll.CanvasSize = UDim2.new(0,0,0,0)
+    histScroll.ZIndex = 8; histScroll.Parent = customWrap
+    corner(histScroll, 8)
+
+    onTheme(function() histScroll.ScrollBarImageColor3 = T.accent end)
+
+    local histEmpty = Instance.new("TextLabel")
+    histEmpty.Size = UDim2.new(1,0,0,30); histEmpty.Position = UDim2.new(0,0,0,8)
+    histEmpty.BackgroundTransparency = 1
+    histEmpty.Text = "> no history yet"
+    histEmpty.TextColor3 = T.text3; histEmpty.Font = FONT_DISPLAY
+    histEmpty.TextSize = 11; histEmpty.ZIndex = 9; histEmpty.Parent = histScroll
+
+    saveHistory = function()
+        writeJSON(HIST_FILE, { items = history })
     end
-    if #history == 0 then
-        histEmpty.Visible = true
-        histScroll.CanvasSize = UDim2.new(0, 0, 0, 40)
-        return
-    end
-    histEmpty.Visible = false
 
-    local y = 4
-    for i, entry in ipairs(history) do
-        local row = Instance.new("TextButton")
-        row.Size = UDim2.new(1, -8, 0, 30); row.Position = UDim2.new(0, 4, 0, y)
-        row.BackgroundColor3 = T.surface2; row.BackgroundTransparency = 0.2
-        row.BorderSizePixel = 0; row.Text = ""; row.AutoButtonColor = false
-        row.ZIndex = 9; row.Parent = histScroll
-        corner(row, 6)
+    renderHistory = function()
+        for _, c in ipairs(histScroll:GetChildren()) do
+            if c ~= histEmpty then c:Destroy() end
+        end
+        if #history == 0 then
+            histEmpty.Visible = true
+            histScroll.CanvasSize = UDim2.new(0, 0, 0, 40)
+            return
+        end
+        histEmpty.Visible = false
 
-        local dotLbl = Instance.new("TextLabel")
-        dotLbl.Size = UDim2.new(0, 16, 1, 0); dotLbl.Position = UDim2.new(0, 6, 0, 0)
-        dotLbl.BackgroundTransparency = 1
-        dotLbl.Text = entry.ok and "●" or "×"
-        dotLbl.TextColor3 = entry.ok and T.ok or T.danger
-        dotLbl.Font = FONT_DISPLAY; dotLbl.TextSize = 14
-        dotLbl.ZIndex = 10; dotLbl.Parent = row
+        local y = 4
+        for i, entry in ipairs(history) do
+            local row = Instance.new("TextButton")
+            row.Size = UDim2.new(1, -8, 0, 30); row.Position = UDim2.new(0, 4, 0, y)
+            row.BackgroundColor3 = T.surface2; row.BackgroundTransparency = 0.2
+            row.BorderSizePixel = 0; row.Text = ""; row.AutoButtonColor = false
+            row.ZIndex = 9; row.Parent = histScroll
+            corner(row, 6)
 
-        local urlLbl = Instance.new("TextLabel")
-        urlLbl.Size = UDim2.new(1, -90, 1, 0); urlLbl.Position = UDim2.new(0, 26, 0, 0)
-        urlLbl.BackgroundTransparency = 1
-        urlLbl.Text = entry.url:sub(1, 60)
-        urlLbl.TextColor3 = T.text1; urlLbl.Font = FONT_DISPLAY
-        urlLbl.TextSize = 10; urlLbl.TextXAlignment = Enum.TextXAlignment.Left
-        urlLbl.TextTruncate = Enum.TextTruncate.AtEnd
-        urlLbl.ZIndex = 10; urlLbl.Parent = row
+            local dotLbl = Instance.new("TextLabel")
+            dotLbl.Size = UDim2.new(0, 16, 1, 0); dotLbl.Position = UDim2.new(0, 6, 0, 0)
+            dotLbl.BackgroundTransparency = 1
+            dotLbl.Text = entry.ok and "●" or "×"
+            dotLbl.TextColor3 = entry.ok and T.ok or T.danger
+            dotLbl.Font = FONT_DISPLAY; dotLbl.TextSize = 14
+            dotLbl.ZIndex = 10; dotLbl.Parent = row
 
-        local delBtn = Instance.new("TextButton")
-        delBtn.Size = UDim2.new(0, 22, 1, -6); delBtn.Position = UDim2.new(1, -26, 0, 3)
-        delBtn.BackgroundColor3 = T.surface3; delBtn.BackgroundTransparency = 0.3
-        delBtn.BorderSizePixel = 0; delBtn.Text = "×"
-        delBtn.TextColor3 = T.text2; delBtn.Font = FONT_DISPLAY
-        delBtn.TextSize = 14; delBtn.AutoButtonColor = false
-        delBtn.ZIndex = 11; delBtn.Parent = row
-        corner(delBtn, 4)
-        delBtn.MouseEnter:Connect(function() delBtn.TextColor3 = T.danger end)
-        delBtn.MouseLeave:Connect(function() delBtn.TextColor3 = T.text2 end)
-        delBtn.MouseButton1Click:Connect(function()
-            table.remove(history, i)
-            saveHistory()
-            renderHistory()
-        end)
+            local urlLbl = Instance.new("TextLabel")
+            urlLbl.Size = UDim2.new(1, -90, 1, 0); urlLbl.Position = UDim2.new(0, 26, 0, 0)
+            urlLbl.BackgroundTransparency = 1
+            urlLbl.Text = entry.url:sub(1, 60)
+            urlLbl.TextColor3 = T.text1; urlLbl.Font = FONT_DISPLAY
+            urlLbl.TextSize = 10; urlLbl.TextXAlignment = Enum.TextXAlignment.Left
+            urlLbl.TextTruncate = Enum.TextTruncate.AtEnd
+            urlLbl.ZIndex = 10; urlLbl.Parent = row
 
-        row.MouseEnter:Connect(function() tween(row, { BackgroundTransparency = 0 }, 0.15) end)
-        row.MouseLeave:Connect(function() tween(row, { BackgroundTransparency = 0.2 }, 0.15) end)
-        row.MouseButton1Click:Connect(function()
-            urlInput.Text = entry.url
-            task.spawn(function()
-                if urlInput.Text == "" or not urlInput.Text:match("^https?://") then return end
-                statusLbl.Text = "> re-injecting from history..."; statusLbl.TextColor3 = T.warn
-                local ok, err = pcall(function()
-                    local content = fetchScript(urlInput.Text)
-                    loadstring(content)()
-                end)
-                if ok then
-                    statusLbl.Text = "> injected successfully"; statusLbl.TextColor3 = T.ok
-                else
-                    statusLbl.Text = "> failed: " .. tostring(err):sub(1, 40); statusLbl.TextColor3 = T.danger
-                end
+            local delBtn = Instance.new("TextButton")
+            delBtn.Size = UDim2.new(0, 22, 1, -6); delBtn.Position = UDim2.new(1, -26, 0, 3)
+            delBtn.BackgroundColor3 = T.surface3; delBtn.BackgroundTransparency = 0.3
+            delBtn.BorderSizePixel = 0; delBtn.Text = "×"
+            delBtn.TextColor3 = T.text2; delBtn.Font = FONT_DISPLAY
+            delBtn.TextSize = 14; delBtn.AutoButtonColor = false
+            delBtn.ZIndex = 11; delBtn.Parent = row
+            corner(delBtn, 4)
+            delBtn.MouseEnter:Connect(function() delBtn.TextColor3 = T.danger end)
+            delBtn.MouseLeave:Connect(function() delBtn.TextColor3 = T.text2 end)
+            delBtn.MouseButton1Click:Connect(function()
+                table.remove(history, i)
+                saveHistory()
+                renderHistory()
             end)
-        end)
 
-        y = y + 34
+            row.MouseEnter:Connect(function() tween(row, { BackgroundTransparency = 0 }, 0.15) end)
+            row.MouseLeave:Connect(function() tween(row, { BackgroundTransparency = 0.2 }, 0.15) end)
+            row.MouseButton1Click:Connect(function()
+                urlInput.Text = entry.url
+                task.spawn(function()
+                    if urlInput.Text == "" or not urlInput.Text:match("^https?://") then return end
+                    statusLbl.Text = "> re-injecting from history..."; statusLbl.TextColor3 = T.warn
+                    local ok, err = pcall(function()
+                        local content = fetchScript(urlInput.Text)
+                        loadstring(content)()
+                    end)
+                    if ok then
+                        statusLbl.Text = "> injected successfully"; statusLbl.TextColor3 = T.ok
+                    else
+                        statusLbl.Text = "> failed: " .. tostring(err):sub(1, 40); statusLbl.TextColor3 = T.danger
+                    end
+                end)
+            end)
+
+            y = y + 34
+        end
+        histScroll.CanvasSize = UDim2.new(0, 0, 0, y + 4)
     end
-    histScroll.CanvasSize = UDim2.new(0, 0, 0, y + 4)
-end
 
-local function loadHistory()
-    history = {}
-    local data = readJSON(HIST_FILE, nil)
-    if type(data) == "table" and type(data.items) == "table" then
-        for _, e in ipairs(data.items) do
-            if type(e) == "table" and type(e.url) == "string" then
-                table.insert(history, { url = e.url, ok = e.ok and true or false })
+    loadHistory = function()
+        history = {}
+        local data = readJSON(HIST_FILE, nil)
+        if type(data) == "table" and type(data.items) == "table" then
+            for _, e in ipairs(data.items) do
+                if type(e) == "table" and type(e.url) == "string" then
+                    table.insert(history, { url = e.url, ok = e.ok and true or false })
+                end
             end
         end
+        renderHistory()
     end
-    renderHistory()
-end
 
-local function pushHistory(url, ok)
-    for i, e in ipairs(history) do
-        if e.url == url then table.remove(history, i); break end
-    end
-    table.insert(history, 1, { url = url, ok = ok })
-    while #history > 20 do table.remove(history) end
-    saveHistory()
-    renderHistory()
-end
-
-loadBtn.MouseButton1Click:Connect(function()
-    local url = urlInput.Text
-    if url == "" or not url:match("^https?://") then
-        statusLbl.Text = "> invalid URL"; statusLbl.TextColor3 = T.danger; return
-    end
-    statusLbl.Text = "> injecting..."; statusLbl.TextColor3 = T.warn
-    task.spawn(function()
-        local ok, err = pcall(function()
-            local content = fetchScript(url)
-            loadstring(content)()
-        end)
-        if ok then
-            statusLbl.Text = "> injected successfully"; statusLbl.TextColor3 = T.ok
-            pushHistory(url, true)
-        else
-            statusLbl.Text = "> failed: " .. tostring(err):sub(1, 40); statusLbl.TextColor3 = T.danger
-            warn("[A-90 HUB] custom inject failed: " .. tostring(err))
-            pushHistory(url, false)
+    pushHistory = function(url, ok)
+        for i, e in ipairs(history) do
+            if e.url == url then table.remove(history, i); break end
         end
+        table.insert(history, 1, { url = url, ok = ok })
+        while #history > 20 do table.remove(history) end
+        saveHistory()
+        renderHistory()
+    end
+
+    loadBtn.MouseButton1Click:Connect(function()
+        local url = urlInput.Text
+        if url == "" or not url:match("^https?://") then
+            statusLbl.Text = "> invalid URL"; statusLbl.TextColor3 = T.danger; return
+        end
+        statusLbl.Text = "> injecting..."; statusLbl.TextColor3 = T.warn
+        task.spawn(function()
+            local ok, err = pcall(function()
+                local content = fetchScript(url)
+                loadstring(content)()
+            end)
+            if ok then
+                statusLbl.Text = "> injected successfully"; statusLbl.TextColor3 = T.ok
+                pushHistory(url, true)
+            else
+                statusLbl.Text = "> failed: " .. tostring(err):sub(1, 40); statusLbl.TextColor3 = T.danger
+                warn("[A-90 HUB] custom inject failed: " .. tostring(err))
+                pushHistory(url, false)
+            end
+        end)
     end)
-end)
+end
 
 -- =========================================================
 --  PAGE: USER — custom scripts added by user
 -- =========================================================
+-- Всё в do-блоке для экономии local-регистров
 
-local userPage = pages.USER
+do
+    local userPage = pages.USER
 
-local userAddBtn = Instance.new("TextButton")
-userAddBtn.Size = UDim2.new(1, -40, 0, 42)
-userAddBtn.Position = UDim2.new(0, 20, 0, 4)
-userAddBtn.BackgroundColor3 = T.surface2
-userAddBtn.BackgroundTransparency = 0.3
-userAddBtn.BorderSizePixel = 0
-userAddBtn.Text = "✚  ADD NEW SCRIPT"
-userAddBtn.TextColor3 = T.accentHi
-userAddBtn.Font = FONT_DISPLAY
-userAddBtn.TextSize = 14
-userAddBtn.AutoButtonColor = false
-userAddBtn.ZIndex = 9
-userAddBtn.Parent = userPage
-corner(userAddBtn, 10)
-local userAddStroke = stroke(userAddBtn, T.accent, 1.2, 0.5)
-
-onTheme(function()
-    userAddStroke.Color = T.accent
+    local userAddBtn = Instance.new("TextButton")
+    userAddBtn.Size = UDim2.new(1, -40, 0, 42)
+    userAddBtn.Position = UDim2.new(0, 20, 0, 4)
+    userAddBtn.BackgroundColor3 = T.surface2
+    userAddBtn.BackgroundTransparency = 0.3
+    userAddBtn.BorderSizePixel = 0
+    userAddBtn.Text = "✚  ADD NEW SCRIPT"
     userAddBtn.TextColor3 = T.accentHi
-end)
+    userAddBtn.Font = FONT_DISPLAY
+    userAddBtn.TextSize = 14
+    userAddBtn.AutoButtonColor = false
+    userAddBtn.ZIndex = 9
+    userAddBtn.Parent = userPage
+    corner(userAddBtn, 10)
+    local userAddStroke = stroke(userAddBtn, T.accent, 1.2, 0.5)
 
-userAddBtn.MouseEnter:Connect(function()
-    tween(userAddBtn, { BackgroundTransparency = 0.1 }, 0.15)
-    tween(userAddStroke, { Transparency = 0.1 }, 0.15)
-end)
-userAddBtn.MouseLeave:Connect(function()
-    tween(userAddBtn, { BackgroundTransparency = 0.3 }, 0.15)
-    tween(userAddStroke, { Transparency = 0.5 }, 0.15)
-end)
-
-local userScroll = Instance.new("ScrollingFrame")
-userScroll.Size = UDim2.new(1, 0, 1, -56)
-userScroll.Position = UDim2.new(0, 0, 0, 52)
-userScroll.BackgroundTransparency = 1
-userScroll.BorderSizePixel = 0
-userScroll.ScrollBarThickness = 4
-userScroll.ScrollBarImageColor3 = T.accent
-userScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-userScroll.ZIndex = 8
-userScroll.Parent = userPage
-
-onTheme(function() userScroll.ScrollBarImageColor3 = T.accent end)
-
-local userEmpty = Instance.new("TextLabel")
-userEmpty.Size = UDim2.new(1, 0, 0, 40)
-userEmpty.Position = UDim2.new(0, 0, 0, 20)
-userEmpty.BackgroundTransparency = 1
-userEmpty.Text = "✚ no custom scripts yet — tap ADD NEW SCRIPT"
-userEmpty.TextColor3 = T.text3
-userEmpty.Font = FONT_DISPLAY
-userEmpty.TextSize = 12
-userEmpty.ZIndex = 9
-userEmpty.Parent = userScroll
--- =========================================================
---  DRAG & DROP STATE (USER tab)
--- =========================================================
-
-local userDrag = {
-    active = false,
-    idx = nil,
-    slot = nil,
-    startMouse = Vector2.new(0, 0),
-    startX = 0,
-    startY = 0,
-    moved = false,
-    conn = nil,
-}
-
-local function startUserDrag(idx, slot)
-    userDrag.active = true
-    userDrag.idx = idx
-    userDrag.slot = slot
-    userDrag.moved = false
-    userDrag.startMouse = UserInputService:GetMouseLocation()
-    userDrag.startX = slot.Position.X.Offset
-    userDrag.startY = slot.Position.Y.Offset
-
-    if userDrag.conn then userDrag.conn:Disconnect() end
-    userDrag.conn = RunService.RenderStepped:Connect(function()
-        if not userDrag.active or not userDrag.slot then return end
-        local mp = UserInputService:GetMouseLocation()
-        local dx = mp.X - userDrag.startMouse.X
-        local dy = mp.Y - userDrag.startMouse.Y
-        if not userDrag.moved then
-            if math.abs(dx) > 4 or math.abs(dy) > 4 then
-                userDrag.moved = true
-                userDrag.slot.ZIndex = 100
-                tween(userDrag.slot, { BackgroundTransparency = 0.15 }, 0.15)
-            end
-        end
-        if userDrag.moved then
-            userDrag.slot.Position = UDim2.new(0, userDrag.startX + dx, 0, userDrag.startY + dy)
-        end
+    onTheme(function()
+        userAddStroke.Color = T.accent
+        userAddBtn.TextColor3 = T.accentHi
     end)
-end
 
-local function finishUserDrag(release)
-    if not userDrag.active then return end
-    if userDrag.conn then userDrag.conn:Disconnect(); userDrag.conn = nil end
+    userAddBtn.MouseEnter:Connect(function()
+        tween(userAddBtn, { BackgroundTransparency = 0.1 }, 0.15)
+        tween(userAddStroke, { Transparency = 0.1 }, 0.15)
+    end)
+    userAddBtn.MouseLeave:Connect(function()
+        tween(userAddBtn, { BackgroundTransparency = 0.3 }, 0.15)
+        tween(userAddStroke, { Transparency = 0.5 }, 0.15)
+    end)
 
-    local idx   = userDrag.idx
-    local slot  = userDrag.slot
-    local moved = userDrag.moved
+    local userScroll = Instance.new("ScrollingFrame")
+    userScroll.Size = UDim2.new(1, 0, 1, -56)
+    userScroll.Position = UDim2.new(0, 0, 0, 52)
+    userScroll.BackgroundTransparency = 1
+    userScroll.BorderSizePixel = 0
+    userScroll.ScrollBarThickness = 4
+    userScroll.ScrollBarImageColor3 = T.accent
+    userScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    userScroll.ZIndex = 8
+    userScroll.Parent = userPage
 
-    userDrag.active = false
-    userDrag.idx = nil
-    userDrag.slot = nil
-    userDrag.moved = false
+    onTheme(function() userScroll.ScrollBarImageColor3 = T.accent end)
 
-    if not moved then
-        if release and idx and userScripts[idx] then
+    local userEmpty = Instance.new("TextLabel")
+    userEmpty.Size = UDim2.new(1, 0, 0, 40)
+    userEmpty.Position = UDim2.new(0, 0, 0, 20)
+    userEmpty.BackgroundTransparency = 1
+    userEmpty.Text = "✚ no custom scripts yet — tap ADD NEW SCRIPT"
+    userEmpty.TextColor3 = T.text3
+    userEmpty.Font = FONT_DISPLAY
+    userEmpty.TextSize = 12
+    userEmpty.ZIndex = 9
+    userEmpty.Parent = userScroll
+
+    -- drag state
+    local userDrag = {
+        active = false, idx = nil, slot = nil,
+        startMouse = Vector2.new(0, 0), startX = 0, startY = 0,
+        moved = false, conn = nil,
+    }
+
+    local function startUserDrag(idx, slot)
+        userDrag.active = true
+        userDrag.idx = idx
+        userDrag.slot = slot
+        userDrag.moved = false
+        userDrag.startMouse = UserInputService:GetMouseLocation()
+        userDrag.startX = slot.Position.X.Offset
+        userDrag.startY = slot.Position.Y.Offset
+
+        if userDrag.conn then userDrag.conn:Disconnect() end
+        userDrag.conn = RunService.RenderStepped:Connect(function()
+            if not userDrag.active or not userDrag.slot then return end
             local mp = UserInputService:GetMouseLocation()
-            local ap = slot.AbsolutePosition
-            local asz = slot.AbsoluteSize
-            local isOver = mp.X >= ap.X and mp.X <= ap.X + asz.X
-                       and mp.Y >= ap.Y and mp.Y <= ap.Y + asz.Y
-            if isOver then
-                local entry = userScripts[idx]
-                if entry.sm then
-                    doInject(entry.sm, entry.url, entry.name or "Custom")
+            local dx = mp.X - userDrag.startMouse.X
+            local dy = mp.Y - userDrag.startMouse.Y
+            if not userDrag.moved then
+                if math.abs(dx) > 4 or math.abs(dy) > 4 then
+                    userDrag.moved = true
+                    userDrag.slot.ZIndex = 100
+                    tween(userDrag.slot, { BackgroundTransparency = 0.15 }, 0.15)
+                end
+            end
+            if userDrag.moved then
+                userDrag.slot.Position = UDim2.new(0, userDrag.startX + dx, 0, userDrag.startY + dy)
+            end
+        end)
+    end
+
+    function saveUserScripts()
+        local out = {}
+        for _, e in ipairs(userScripts) do
+            table.insert(out, { name = e.name, icon = e.icon, url = e.url })
+        end
+        writeJSON(USER_FILE, { scripts = out })
+    end
+
+    local renderUserScripts
+
+    local function deleteUserScript(idx)
+        local entry = userScripts[idx]
+        if not entry then return end
+        if entry.ui and entry.ui.slot then entry.ui.slot:Destroy() end
+        table.remove(userScripts, idx)
+        saveUserScripts()
+        renderUserScripts()
+    end
+
+    renderUserScripts = function()
+        for _, c in ipairs(userScroll:GetChildren()) do
+            if c ~= userEmpty then c:Destroy() end
+        end
+
+        if #userScripts == 0 then
+            userEmpty.Visible = true
+            userScroll.CanvasSize = UDim2.new(0, 0, 0, 80)
+            return
+        end
+        userEmpty.Visible = false
+
+        local cols = 3
+        local pad = 20
+        local gap = 12
+        local tileW = 213
+        local tileH = 110
+        local rowGap = 12
+
+        for i, entry in ipairs(userScripts) do
+            local col = ((i - 1) % cols) + 1
+            local row = math.floor((i - 1) / cols) + 1
+            local xPos = pad + (col - 1) * (tileW + gap)
+            local yPos = pad + (row - 1) * (tileH + rowGap + 18)
+
+            local slot = Instance.new("Frame")
+            slot.Size = UDim2.new(0, tileW, 0, tileH + 18)
+            slot.Position = UDim2.new(0, xPos, 0, yPos)
+            slot.BackgroundTransparency = 1
+            slot.ZIndex = 8
+            slot.Parent = userScroll
+
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, tileH)
+            btn.BackgroundColor3 = Color3.new(1,1,1)
+            btn.BorderSizePixel = 0
+            btn.Text = ""
+            btn.AutoButtonColor = false
+            btn.ClipsDescendants = true
+            btn.ZIndex = 8
+            btn.Parent = slot
+            corner(btn, 14)
+
+            local btnGrad = grad(btn, { BTN.base1, BTN.base2 }, 135); btnGrad.Parent = btn
+            local btnStroke = stroke(btn, Color3.new(1,1,1), 1, 0.75)
+
+            local overlay = Instance.new("Frame")
+            overlay.Size = UDim2.new(1,0,1,0)
+            overlay.BackgroundColor3 = Color3.new(1,1,1)
+            overlay.BackgroundTransparency = 1
+            overlay.BorderSizePixel = 0
+            overlay.ZIndex = 10
+            overlay.Parent = btn
+            corner(overlay, 14)
+            local ovGrad = grad(overlay, { BTN.hov1, BTN.hov2 }, 135); ovGrad.Parent = overlay
+
+            local shine = Instance.new("Frame")
+            shine.Size = UDim2.new(0, 60, 2, 0)
+            shine.Position = UDim2.new(0, -100, -0.5, 0)
+            shine.BackgroundColor3 = Color3.new(1,1,1)
+            shine.BackgroundTransparency = 0.7
+            shine.BorderSizePixel = 0
+            shine.Rotation = 20
+            shine.ZIndex = 11
+            shine.Parent = btn
+
+            local content = Instance.new("Frame")
+            content.Size = UDim2.new(1, 0, 1, 0)
+            content.BackgroundTransparency = 1
+            content.ZIndex = 12
+            content.Parent = btn
+
+            local layout = Instance.new("UIListLayout")
+            layout.FillDirection = Enum.FillDirection.Horizontal
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            layout.VerticalAlignment = Enum.VerticalAlignment.Center
+            layout.Padding = UDim.new(0, 12)
+            layout.Parent = content
+
+            local iconLbl = Instance.new("TextLabel")
+            iconLbl.Size = UDim2.new(0, 34, 0, 34)
+            iconLbl.BackgroundTransparency = 1
+            iconLbl.Text = entry.icon or "★"
+            iconLbl.TextColor3 = Color3.new(1,1,1)
+            iconLbl.Font = FONT_DISPLAY
+            iconLbl.TextSize = 26
+            iconLbl.LayoutOrder = 1
+            iconLbl.ZIndex = 13
+            iconLbl.Parent = content
+
+            local nameLbl = Instance.new("TextLabel")
+            nameLbl.AutomaticSize = Enum.AutomaticSize.X
+            nameLbl.Size = UDim2.new(0, 0, 1, 0)
+            nameLbl.BackgroundTransparency = 1
+            nameLbl.Text = entry.name or "CUSTOM"
+            nameLbl.TextColor3 = Color3.new(1,1,1)
+            nameLbl.Font = FONT_DISPLAY
+            nameLbl.TextSize = 16
+            nameLbl.LayoutOrder = 2
+            nameLbl.ZIndex = 13
+            nameLbl.Parent = content
+
+            local hintLbl = Instance.new("TextLabel")
+            hintLbl.Size = UDim2.new(1, 0, 0, 16)
+            hintLbl.Position = UDim2.new(0, 0, 0, tileH + 2)
+            hintLbl.BackgroundTransparency = 1
+            hintLbl.Text = "> click to inject"
+            hintLbl.TextColor3 = T.text2
+            hintLbl.Font = FONT_BODY
+            hintLbl.TextSize = 12
+            hintLbl.TextXAlignment = Enum.TextXAlignment.Center
+            hintLbl.TextTruncate = Enum.TextTruncate.AtEnd
+            hintLbl.ZIndex = 8
+            hintLbl.Parent = slot
+
+            local del = Instance.new("TextButton")
+            del.Size = UDim2.new(0, 24, 0, 24); del.Position = UDim2.new(1, -28, 0, 6)
+            del.BackgroundColor3 = T.surface0; del.BackgroundTransparency = 0.25
+            del.BorderSizePixel = 0; del.Text = "×"; del.TextColor3 = T.text2
+            del.Font = FONT_DISPLAY; del.TextSize = 16; del.AutoButtonColor = false
+            del.ZIndex = 15; del.Parent = btn
+            corner(del, 6)
+            del.MouseEnter:Connect(function() tween(del, { BackgroundTransparency = 0, TextColor3 = T.danger }, 0.15) end)
+            del.MouseLeave:Connect(function() tween(del, { BackgroundTransparency = 0.25, TextColor3 = T.text2 }, 0.15) end)
+            del.MouseButton1Click:Connect(function() deleteUserScript(i) end)
+
+            local sm = makeStateMachine({ btnGrad = btnGrad, ovGrad = ovGrad, btnStroke = btnStroke,
+                btnText = nameLbl, hint = hintLbl },
+                entry.name or "CUSTOM", "> click to inject", "> loading...", "> active", "> failed")
+
+            entry.ui = { slot = slot, button = btn, btnText = nameLbl, hint = hintLbl,
+                btnGrad = btnGrad, btnStroke = btnStroke, ovGrad = ovGrad }
+            entry.sm = sm
+
+            btn.MouseEnter:Connect(function()
+                tween(overlay, { BackgroundTransparency = 0 }, 0.25)
+                tween(btnStroke, { Transparency = 0.3 }, 0.25)
+                shine.Position = UDim2.new(0, -100, -0.5, 0)
+                tween(shine, { Position = UDim2.new(1, 40, -0.5, 0) }, 0.7, Enum.EasingStyle.Quad)
+            end)
+            btn.MouseLeave:Connect(function()
+                tween(overlay, { BackgroundTransparency = 1 }, 0.25)
+                tween(btnStroke, { Transparency = 0.75 }, 0.25)
+            end)
+            btn.MouseButton1Down:Connect(function()
+                tween(btn, { BackgroundTransparency = 0.15 }, 0.08)
+            end)
+            btn.MouseButton1Up:Connect(function()
+                tween(btn, { BackgroundTransparency = 0 }, 0.12)
+            end)
+
+            btn.MouseButton1Down:Connect(function()
+                startUserDrag(i, slot)
+            end)
+
+            table.insert(registry, { ui = { slot = slot }, label = entry.name or "CUSTOM", page = userScroll })
+        end
+
+        local totalRows = math.ceil(#userScripts / 3)
+        local canvasH = 20 + totalRows * (110 + 12 + 18) + 20
+        userScroll.CanvasSize = UDim2.new(0, 0, 0, canvasH)
+    end
+
+    local function finishUserDrag(release)
+        if not userDrag.active then return end
+        if userDrag.conn then userDrag.conn:Disconnect(); userDrag.conn = nil end
+
+        local idx   = userDrag.idx
+        local slot  = userDrag.slot
+        local moved = userDrag.moved
+
+        userDrag.active = false
+        userDrag.idx = nil
+        userDrag.slot = nil
+        userDrag.moved = false
+
+        if not moved then
+            if release and idx and userScripts[idx] then
+                local mp = UserInputService:GetMouseLocation()
+                local ap = slot.AbsolutePosition
+                local asz = slot.AbsoluteSize
+                local isOver = mp.X >= ap.X and mp.X <= ap.X + asz.X
+                           and mp.Y >= ap.Y and mp.Y <= ap.Y + asz.Y
+                if isOver then
+                    local entry = userScripts[idx]
+                    if entry.sm then
+                        doInject(entry.sm, entry.url, entry.name or "Custom")
+                    end
+                end
+            end
+            return
+        end
+
+        local centerX = slot.AbsolutePosition.X + slot.AbsoluteSize.X * 0.5
+        local centerY = slot.AbsolutePosition.Y + slot.AbsoluteSize.Y * 0.5
+        local newIdx = idx
+        for i, e in ipairs(userScripts) do
+            if e.ui and e.ui.slot and e.ui.slot ~= slot then
+                local s = e.ui.slot
+                local sp = s.AbsolutePosition
+                local ss = s.AbsoluteSize
+                if centerX >= sp.X and centerX <= sp.X + ss.X
+                and centerY >= sp.Y and centerY <= sp.Y + ss.Y then
+                    newIdx = i
+                    break
                 end
             end
         end
-        return
-    end
 
-    local centerX = slot.AbsolutePosition.X + slot.AbsoluteSize.X * 0.5
-    local centerY = slot.AbsolutePosition.Y + slot.AbsoluteSize.Y * 0.5
-    local newIdx = idx
-    for i, e in ipairs(userScripts) do
-        if e.ui and e.ui.slot and e.ui.slot ~= slot then
-            local s = e.ui.slot
-            local sp = s.AbsolutePosition
-            local ss = s.AbsoluteSize
-            if centerX >= sp.X and centerX <= sp.X + ss.X
-            and centerY >= sp.Y and centerY <= sp.Y + ss.Y then
-                newIdx = i
-                break
-            end
+        if release and newIdx ~= idx then
+            local movedEntry = table.remove(userScripts, idx)
+            table.insert(userScripts, newIdx, movedEntry)
+            saveUserScripts()
         end
-    end
 
-    if release and newIdx ~= idx then
-        local movedEntry = table.remove(userScripts, idx)
-        table.insert(userScripts, newIdx, movedEntry)
-        saveUserScripts()
-    end
-
-    for _, e in ipairs(userScripts) do
-        if e.ui and e.ui.slot then e.ui.slot:Destroy() end
-        e.ui = nil
-        e.sm = nil
-    end
-    renderUserScripts()
-end
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType ~= Enum.UserInputType.MouseButton1
-    and input.UserInputType ~= Enum.UserInputType.Touch then return end
-    if not userDrag.active then return end
-    finishUserDrag(true)
-end)
-
-local function saveUserScripts()
-    local out = {}
-    for _, e in ipairs(userScripts) do
-        table.insert(out, { name = e.name, icon = e.icon, url = e.url })
-    end
-    writeJSON(USER_FILE, { scripts = out })
-end
-
-local renderUserScripts  -- forward decl
-
-local function deleteUserScript(idx)
-    local entry = userScripts[idx]
-    if not entry then return end
-    if entry.ui and entry.ui.slot then entry.ui.slot:Destroy() end
-    table.remove(userScripts, idx)
-    saveUserScripts()
-    renderUserScripts()
-end
-
-renderUserScripts = function()
-    for _, c in ipairs(userScroll:GetChildren()) do
-        if c ~= userEmpty then c:Destroy() end
-    end
-
-    if #userScripts == 0 then
-        userEmpty.Visible = true
-        userScroll.CanvasSize = UDim2.new(0, 0, 0, 80)
-        return
-    end
-    userEmpty.Visible = false
-
-    -- lay tiles in a 3-column grid inside userScroll
-    local cols = 3
-    local pad = 20
-    local gap = 12
-    local tileW = 213
-    local tileH = 110
-    local rowGap = 12
-
-    for i, entry in ipairs(userScripts) do
-        local col = ((i - 1) % cols) + 1
-        local row = math.floor((i - 1) / cols) + 1
-        local xPos = pad + (col - 1) * (tileW + gap)
-        local yPos = pad + (row - 1) * (tileH + rowGap + 18)
-
-        local slot = Instance.new("Frame")
-        slot.Size = UDim2.new(0, tileW, 0, tileH + 18)
-        slot.Position = UDim2.new(0, xPos, 0, yPos)
-        slot.BackgroundTransparency = 1
-        slot.ZIndex = 8
-        slot.Parent = userScroll
-
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, tileH)
-        btn.BackgroundColor3 = Color3.new(1,1,1)
-        btn.BorderSizePixel = 0
-        btn.Text = ""
-        btn.AutoButtonColor = false
-        btn.ClipsDescendants = true
-        btn.ZIndex = 8
-        btn.Parent = slot
-        corner(btn, 14)
-
-        local btnGrad = grad(btn, { BTN.base1, BTN.base2 }, 135); btnGrad.Parent = btn
-        local btnStroke = stroke(btn, Color3.new(1,1,1), 1, 0.75)
-
-        local overlay = Instance.new("Frame")
-        overlay.Size = UDim2.new(1,0,1,0)
-        overlay.BackgroundColor3 = Color3.new(1,1,1)
-        overlay.BackgroundTransparency = 1
-        overlay.BorderSizePixel = 0
-        overlay.ZIndex = 10
-        overlay.Parent = btn
-        corner(overlay, 14)
-        local ovGrad = grad(overlay, { BTN.hov1, BTN.hov2 }, 135); ovGrad.Parent = overlay
-
-        local shine = Instance.new("Frame")
-        shine.Size = UDim2.new(0, 60, 2, 0)
-        shine.Position = UDim2.new(0, -100, -0.5, 0)
-        shine.BackgroundColor3 = Color3.new(1,1,1)
-        shine.BackgroundTransparency = 0.7
-        shine.BorderSizePixel = 0
-        shine.Rotation = 20
-        shine.ZIndex = 11
-        shine.Parent = btn
-
-        local content = Instance.new("Frame")
-        content.Size = UDim2.new(1, 0, 1, 0)
-        content.BackgroundTransparency = 1
-        content.ZIndex = 12
-        content.Parent = btn
-
-        local layout = Instance.new("UIListLayout")
-        layout.FillDirection = Enum.FillDirection.Horizontal
-        layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-        layout.VerticalAlignment = Enum.VerticalAlignment.Center
-        layout.Padding = UDim.new(0, 12)
-        layout.Parent = content
-
-        local iconLbl = Instance.new("TextLabel")
-        iconLbl.Size = UDim2.new(0, 34, 0, 34)
-        iconLbl.BackgroundTransparency = 1
-        iconLbl.Text = entry.icon or "★"
-        iconLbl.TextColor3 = Color3.new(1,1,1)
-        iconLbl.Font = FONT_DISPLAY
-        iconLbl.TextSize = 26
-        iconLbl.LayoutOrder = 1
-        iconLbl.ZIndex = 13
-        iconLbl.Parent = content
-
-        local nameLbl = Instance.new("TextLabel")
-        nameLbl.AutomaticSize = Enum.AutomaticSize.X
-        nameLbl.Size = UDim2.new(0, 0, 1, 0)
-        nameLbl.BackgroundTransparency = 1
-        nameLbl.Text = entry.name or "CUSTOM"
-        nameLbl.TextColor3 = Color3.new(1,1,1)
-        nameLbl.Font = FONT_DISPLAY
-        nameLbl.TextSize = 16
-        nameLbl.LayoutOrder = 2
-        nameLbl.ZIndex = 13
-        nameLbl.Parent = content
-
-        local hintLbl = Instance.new("TextLabel")
-        hintLbl.Size = UDim2.new(1, 0, 0, 16)
-        hintLbl.Position = UDim2.new(0, 0, 0, tileH + 2)
-        hintLbl.BackgroundTransparency = 1
-        hintLbl.Text = "> click to inject"
-        hintLbl.TextColor3 = T.text2
-        hintLbl.Font = FONT_BODY
-        hintLbl.TextSize = 12
-        hintLbl.TextXAlignment = Enum.TextXAlignment.Center
-        hintLbl.TextTruncate = Enum.TextTruncate.AtEnd
-        hintLbl.ZIndex = 8
-        hintLbl.Parent = slot
-
-        -- delete button
-        local del = Instance.new("TextButton")
-        del.Size = UDim2.new(0, 24, 0, 24); del.Position = UDim2.new(1, -28, 0, 6)
-        del.BackgroundColor3 = T.surface0; del.BackgroundTransparency = 0.25
-        del.BorderSizePixel = 0; del.Text = "×"; del.TextColor3 = T.text2
-        del.Font = FONT_DISPLAY; del.TextSize = 16; del.AutoButtonColor = false
-        del.ZIndex = 15; del.Parent = btn
-        corner(del, 6)
-        del.MouseEnter:Connect(function() tween(del, { BackgroundTransparency = 0, TextColor3 = T.danger }, 0.15) end)
-        del.MouseLeave:Connect(function() tween(del, { BackgroundTransparency = 0.25, TextColor3 = T.text2 }, 0.15) end)
-        del.MouseButton1Click:Connect(function() deleteUserScript(i) end)
-
-        local sm = makeStateMachine({ btnGrad = btnGrad, ovGrad = ovGrad, btnStroke = btnStroke,
-            btnText = nameLbl, hint = hintLbl },
-            entry.name or "CUSTOM", "> click to inject", "> loading...", "> active", "> failed")
-
-        entry.ui = { slot = slot, button = btn, btnText = nameLbl, hint = hintLbl,
-            btnGrad = btnGrad, btnStroke = btnStroke, ovGrad = ovGrad }
-        entry.sm = sm
-
-        btn.MouseEnter:Connect(function()
-            tween(overlay, { BackgroundTransparency = 0 }, 0.25)
-            tween(btnStroke, { Transparency = 0.3 }, 0.25)
-            shine.Position = UDim2.new(0, -100, -0.5, 0)
-            tween(shine, { Position = UDim2.new(1, 40, -0.5, 0) }, 0.7, Enum.EasingStyle.Quad)
-        end)
-        btn.MouseLeave:Connect(function()
-            tween(overlay, { BackgroundTransparency = 1 }, 0.25)
-            tween(btnStroke, { Transparency = 0.75 }, 0.25)
-        end)
-        btn.MouseButton1Down:Connect(function()
-            tween(btn, { BackgroundTransparency = 0.15 }, 0.08)
-        end)
-        btn.MouseButton1Up:Connect(function()
-            tween(btn, { BackgroundTransparency = 0 }, 0.12)
-        end)
-
-        btn.MouseButton1Down:Connect(function()
-            startUserDrag(i, slot)
-        end)
-
-        table.insert(registry, { ui = { slot = slot }, label = entry.name or "CUSTOM", page = userScroll })
-    end
-
-    local totalRows = math.ceil(#userScripts / 3)
-    local canvasH = 20 + totalRows * (110 + 12 + 18) + 20
-    userScroll.CanvasSize = UDim2.new(0, 0, 0, canvasH)
-end
-
-local function loadUserScripts()
-    local data = readJSON(USER_FILE, nil)
-    if type(data) == "table" and type(data.scripts) == "table" then
-        for _, e in ipairs(data.scripts) do
-            if type(e) == "table" and type(e.url) == "string" then
-                table.insert(userScripts, {
-                    name = tostring(e.name or "CUSTOM"),
-                    icon = tostring(e.icon or "★"),
-                    url = tostring(e.url),
-                })
-            end
+        for _, e in ipairs(userScripts) do
+            if e.ui and e.ui.slot then e.ui.slot:Destroy() end
+            e.ui = nil
+            e.sm = nil
         end
-    end
-    renderUserScripts()
-end
-
--- =========================================================
---  ADD SCRIPT MODAL
--- =========================================================
-
-local addModal = Instance.new("Frame")
-addModal.Size = UDim2.new(1, 0, 1, 0)
-addModal.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-addModal.BackgroundTransparency = 0.5
-addModal.BorderSizePixel = 0
-addModal.Visible = false
-addModal.ZIndex = 60
-addModal.Parent = main
-
-local modalBox = Instance.new("Frame")
-modalBox.AnchorPoint = Vector2.new(0.5, 0.5)
-modalBox.Position = UDim2.new(0.5, 0, 0.5, 0)
-modalBox.Size = UDim2.new(0, 400, 0, 320)
-modalBox.BackgroundColor3 = T.surface1
-modalBox.BackgroundTransparency = 0.05
-modalBox.BorderSizePixel = 0
-modalBox.ZIndex = 61
-modalBox.Parent = addModal
-corner(modalBox, 14)
-
-local modalStroke = stroke(modalBox, T.accent, 1.5, 0.3)
-onTheme(function() modalStroke.Color = T.accent end)
-
-local modalGrad = grad(modalBox, { T.surface1, T.surface0 }, 135)
-
-local modalTitle = Instance.new("TextLabel")
-modalTitle.Size = UDim2.new(1, 0, 0, 30)
-modalTitle.Position = UDim2.new(0, 0, 0, 14)
-modalTitle.BackgroundTransparency = 1
-modalTitle.Text = "NEW SCRIPT"
-modalTitle.TextColor3 = T.accentHi
-modalTitle.Font = FONT_DISPLAY
-modalTitle.TextSize = 18
-modalTitle.ZIndex = 62
-modalTitle.Parent = modalBox
-
-onTheme(function() modalTitle.TextColor3 = T.accentHi end)
-
-local function makeField(yPos, label, placeholder, maxLen)
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -40, 0, 16)
-    lbl.Position = UDim2.new(0, 20, 0, yPos)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = label
-    lbl.TextColor3 = T.text2
-    lbl.Font = FONT_DISPLAY
-    lbl.TextSize = 11
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.ZIndex = 62
-    lbl.Parent = modalBox
-
-    local box = Instance.new("Frame")
-    box.Size = UDim2.new(1, -40, 0, 36)
-    box.Position = UDim2.new(0, 20, 0, yPos + 18)
-    box.BackgroundColor3 = T.surface2
-    box.BackgroundTransparency = 0.3
-    box.BorderSizePixel = 0
-    box.ZIndex = 62
-    box.Parent = modalBox
-    corner(box, 8)
-    local st = stroke(box, T.accent, 1, 0.6)
-    onTheme(function() st.Color = T.accent end)
-
-    local input = Instance.new("TextBox")
-    input.Size = UDim2.new(1, -20, 1, 0)
-    input.Position = UDim2.new(0, 10, 0, 0)
-    input.BackgroundTransparency = 1
-    input.Text = ""
-    input.PlaceholderText = placeholder
-    input.PlaceholderColor3 = T.text3
-    input.TextColor3 = T.text0
-    input.Font = FONT_DISPLAY
-    input.TextSize = 12
-    input.TextXAlignment = Enum.TextXAlignment.Left
-    input.ClearTextOnFocus = false
-    input.ZIndex = 63
-    input.Parent = box
-    if maxLen then
-        input:GetPropertyChangedSignal("Text"):Connect(function()
-            if #input.Text > maxLen then
-                input.Text = input.Text:sub(1, maxLen)
-            end
-        end)
-    end
-    return input
-end
-
-local nameInput = makeField(50, "NAME", "My Script", 32)
-local iconInput = makeField(126, "ICON (single symbol)", "★", 4)
-local urlInput2 = makeField(202, "URL", "https://...script.lua")
-
-local cancelBtn = Instance.new("TextButton")
-cancelBtn.Size = UDim2.new(0, 150, 0, 38)
-cancelBtn.Position = UDim2.new(0, 20, 1, -52)
-cancelBtn.BackgroundColor3 = T.surface3
-cancelBtn.BackgroundTransparency = 0.3
-cancelBtn.BorderSizePixel = 0
-cancelBtn.Text = "CANCEL"
-cancelBtn.TextColor3 = T.text1
-cancelBtn.Font = FONT_DISPLAY
-cancelBtn.TextSize = 13
-cancelBtn.AutoButtonColor = false
-cancelBtn.ZIndex = 62
-cancelBtn.Parent = modalBox
-corner(cancelBtn, 8)
-
-local confirmBtn = Instance.new("TextButton")
-confirmBtn.Size = UDim2.new(0, 190, 0, 38)
-confirmBtn.Position = UDim2.new(1, -210, 1, -52)
-confirmBtn.BackgroundColor3 = T.accent
-confirmBtn.BorderSizePixel = 0
-confirmBtn.Text = "ADD SCRIPT"
-confirmBtn.TextColor3 = Color3.new(1,1,1)
-confirmBtn.Font = FONT_DISPLAY
-confirmBtn.TextSize = 13
-confirmBtn.AutoButtonColor = false
-confirmBtn.ZIndex = 62
-confirmBtn.Parent = modalBox
-corner(confirmBtn, 8)
-
-onTheme(function() confirmBtn.BackgroundColor3 = T.accent end)
-
-cancelBtn.MouseEnter:Connect(function() tween(cancelBtn, { BackgroundTransparency = 0 }, 0.15) end)
-cancelBtn.MouseLeave:Connect(function() tween(cancelBtn, { BackgroundTransparency = 0.3 }, 0.15) end)
-confirmBtn.MouseEnter:Connect(function() tween(confirmBtn, { BackgroundTransparency = 0.1 }, 0.15) end)
-confirmBtn.MouseLeave:Connect(function() tween(confirmBtn, { BackgroundTransparency = 0 }, 0.15) end)
-
-local function closeModal()
-    addModal.Visible = false
-    nameInput.Text = ""
-    iconInput.Text = ""
-    urlInput2.Text = ""
-end
-
-cancelBtn.MouseButton1Click:Connect(closeModal)
-
-confirmBtn.MouseButton1Click:Connect(function()
-    local name = nameInput.Text
-    local icon = iconInput.Text
-    local url  = urlInput2.Text
-
-    if name == "" then name = "CUSTOM" end
-    if icon == "" then icon = "★" end
-    if url == "" or not url:match("^https?://") then
-        -- flash red
-        urlInput2.TextColor3 = T.danger
-        task.delay(0.6, function() urlInput2.TextColor3 = T.text0 end)
-        return
+        renderUserScripts()
     end
 
-    table.insert(userScripts, { name = name, icon = icon, url = url })
-    saveUserScripts()
-    renderUserScripts()
-    closeModal()
-end)
-
-userAddBtn.MouseButton1Click:Connect(function()
-    addModal.Visible = true
-    task.delay(0.1, function()
-        pcall(function() nameInput:CaptureFocus() end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        if not userDrag.active then return end
+        finishUserDrag(true)
     end)
-end)
 
-addModal.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        -- click on the dark overlay (not on modalBox)
-        -- we check by hit position
+    function loadUserScripts()
+        local data = readJSON(USER_FILE, nil)
+        if type(data) == "table" and type(data.scripts) == "table" then
+            for _, e in ipairs(data.scripts) do
+                if type(e) == "table" and type(e.url) == "string" then
+                    table.insert(userScripts, {
+                        name = tostring(e.name or "CUSTOM"),
+                        icon = tostring(e.icon or "★"),
+                        url = tostring(e.url),
+                    })
+                end
+            end
+        end
+        renderUserScripts()
     end
-end)
+
+    -- ADD SCRIPT MODAL (тоже в этом блоке, чтобы не плодить регистры)
+
+    local addModal = Instance.new("Frame")
+    addModal.Size = UDim2.new(1, 0, 1, 0)
+    addModal.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    addModal.BackgroundTransparency = 0.5
+    addModal.BorderSizePixel = 0
+    addModal.Visible = false
+    addModal.ZIndex = 60
+    addModal.Parent = main
+
+    local modalBox = Instance.new("Frame")
+    modalBox.AnchorPoint = Vector2.new(0.5, 0.5)
+    modalBox.Position = UDim2.new(0.5, 0, 0.5, 0)
+    modalBox.Size = UDim2.new(0, 400, 0, 320)
+    modalBox.BackgroundColor3 = T.surface1
+    modalBox.BackgroundTransparency = 0.05
+    modalBox.BorderSizePixel = 0
+    modalBox.ZIndex = 61
+    modalBox.Parent = addModal
+    corner(modalBox, 14)
+
+    local modalStroke = stroke(modalBox, T.accent, 1.5, 0.3)
+    onTheme(function() modalStroke.Color = T.accent end)
+
+    grad(modalBox, { T.surface1, T.surface0 }, 135)
+
+    local modalTitle = Instance.new("TextLabel")
+    modalTitle.Size = UDim2.new(1, 0, 0, 30)
+    modalTitle.Position = UDim2.new(0, 0, 0, 14)
+    modalTitle.BackgroundTransparency = 1
+    modalTitle.Text = "NEW SCRIPT"
+    modalTitle.TextColor3 = T.accentHi
+    modalTitle.Font = FONT_DISPLAY
+    modalTitle.TextSize = 18
+    modalTitle.ZIndex = 62
+    modalTitle.Parent = modalBox
+
+    onTheme(function() modalTitle.TextColor3 = T.accentHi end)
+
+    local function makeField(yPos, label, placeholder, maxLen)
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, -40, 0, 16)
+        lbl.Position = UDim2.new(0, 20, 0, yPos)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = label
+        lbl.TextColor3 = T.text2
+        lbl.Font = FONT_DISPLAY
+        lbl.TextSize = 11
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.ZIndex = 62
+        lbl.Parent = modalBox
+
+        local box = Instance.new("Frame")
+        box.Size = UDim2.new(1, -40, 0, 36)
+        box.Position = UDim2.new(0, 20, 0, yPos + 18)
+        box.BackgroundColor3 = T.surface2
+        box.BackgroundTransparency = 0.3
+        box.BorderSizePixel = 0
+        box.ZIndex = 62
+        box.Parent = modalBox
+        corner(box, 8)
+        local st = stroke(box, T.accent, 1, 0.6)
+        onTheme(function() st.Color = T.accent end)
+
+        local input = Instance.new("TextBox")
+        input.Size = UDim2.new(1, -20, 1, 0)
+        input.Position = UDim2.new(0, 10, 0, 0)
+        input.BackgroundTransparency = 1
+        input.Text = ""
+        input.PlaceholderText = placeholder
+        input.PlaceholderColor3 = T.text3
+        input.TextColor3 = T.text0
+        input.Font = FONT_DISPLAY
+        input.TextSize = 12
+        input.TextXAlignment = Enum.TextXAlignment.Left
+        input.ClearTextOnFocus = false
+        input.ZIndex = 63
+        input.Parent = box
+        if maxLen then
+            input:GetPropertyChangedSignal("Text"):Connect(function()
+                if #input.Text > maxLen then
+                    input.Text = input.Text:sub(1, maxLen)
+                end
+            end)
+        end
+        return input
+    end
+
+    local nameInput = makeField(50, "NAME", "My Script", 32)
+    local iconInput = makeField(126, "ICON (single symbol)", "★", 4)
+    local urlInput2 = makeField(202, "URL", "https://...script.lua")
+
+    local cancelBtn = Instance.new("TextButton")
+    cancelBtn.Size = UDim2.new(0, 150, 0, 38)
+    cancelBtn.Position = UDim2.new(0, 20, 1, -52)
+    cancelBtn.BackgroundColor3 = T.surface3
+    cancelBtn.BackgroundTransparency = 0.3
+    cancelBtn.BorderSizePixel = 0
+    cancelBtn.Text = "CANCEL"
+    cancelBtn.TextColor3 = T.text1
+    cancelBtn.Font = FONT_DISPLAY
+    cancelBtn.TextSize = 13
+    cancelBtn.AutoButtonColor = false
+    cancelBtn.ZIndex = 62
+    cancelBtn.Parent = modalBox
+    corner(cancelBtn, 8)
+
+    local confirmBtn = Instance.new("TextButton")
+    confirmBtn.Size = UDim2.new(0, 190, 0, 38)
+    confirmBtn.Position = UDim2.new(1, -210, 1, -52)
+    confirmBtn.BackgroundColor3 = T.accent
+    confirmBtn.BorderSizePixel = 0
+    confirmBtn.Text = "ADD SCRIPT"
+    confirmBtn.TextColor3 = Color3.new(1,1,1)
+    confirmBtn.Font = FONT_DISPLAY
+    confirmBtn.TextSize = 13
+    confirmBtn.AutoButtonColor = false
+    confirmBtn.ZIndex = 62
+    confirmBtn.Parent = modalBox
+    corner(confirmBtn, 8)
+
+    onTheme(function() confirmBtn.BackgroundColor3 = T.accent end)
+
+    cancelBtn.MouseEnter:Connect(function() tween(cancelBtn, { BackgroundTransparency = 0 }, 0.15) end)
+    cancelBtn.MouseLeave:Connect(function() tween(cancelBtn, { BackgroundTransparency = 0.3 }, 0.15) end)
+    confirmBtn.MouseEnter:Connect(function() tween(confirmBtn, { BackgroundTransparency = 0.1 }, 0.15) end)
+    confirmBtn.MouseLeave:Connect(function() tween(confirmBtn, { BackgroundTransparency = 0 }, 0.15) end)
+
+    local function closeModal()
+        addModal.Visible = false
+        nameInput.Text = ""
+        iconInput.Text = ""
+        urlInput2.Text = ""
+    end
+
+    cancelBtn.MouseButton1Click:Connect(closeModal)
+
+    confirmBtn.MouseButton1Click:Connect(function()
+        local name = nameInput.Text
+        local icon = iconInput.Text
+        local url  = urlInput2.Text
+
+        if name == "" then name = "CUSTOM" end
+        if icon == "" then icon = "★" end
+        if url == "" or not url:match("^https?://") then
+            urlInput2.TextColor3 = T.danger
+            task.delay(0.6, function() urlInput2.TextColor3 = T.text0 end)
+            return
+        end
+
+        table.insert(userScripts, { name = name, icon = icon, url = url })
+        saveUserScripts()
+        renderUserScripts()
+        closeModal()
+    end)
+
+    userAddBtn.MouseButton1Click:Connect(function()
+        addModal.Visible = true
+        task.delay(0.1, function()
+            pcall(function() nameInput:CaptureFocus() end)
+        end)
+    end)
+end  -- конец USER + MODAL блока
 
 -- =========================================================
 --  PAGE: SETTINGS
 -- =========================================================
 
-local setupWrap = Instance.new("ScrollingFrame")
-setupWrap.Size = UDim2.new(1, -40, 1, -8)
-setupWrap.Position = UDim2.new(0, 20, 0, 4)
-setupWrap.BackgroundTransparency = 1
-setupWrap.BorderSizePixel = 0
-setupWrap.ScrollBarThickness = 4
-setupWrap.ScrollBarImageColor3 = T.accent
-setupWrap.CanvasSize = UDim2.new(0, 0, 0, 540)
-setupWrap.ZIndex = 8
-setupWrap.Parent = pages.SETUP
+do
+    local setupWrap = Instance.new("ScrollingFrame")
+    setupWrap.Size = UDim2.new(1, -40, 1, -8)
+    setupWrap.Position = UDim2.new(0, 20, 0, 4)
+    setupWrap.BackgroundTransparency = 1
+    setupWrap.BorderSizePixel = 0
+    setupWrap.ScrollBarThickness = 4
+    setupWrap.ScrollBarImageColor3 = T.accent
+    setupWrap.CanvasSize = UDim2.new(0, 0, 0, 540)
+    setupWrap.ZIndex = 8
+    setupWrap.Parent = pages.SETUP
 
-onTheme(function() setupWrap.ScrollBarImageColor3 = T.accent end)
+    onTheme(function() setupWrap.ScrollBarImageColor3 = T.accent end)
 
-local themeTitle = Instance.new("TextLabel")
-themeTitle.Size = UDim2.new(1, 0, 0, 18)
-themeTitle.BackgroundTransparency = 1
-themeTitle.Text = "THEME"
-themeTitle.TextColor3 = T.text2
-themeTitle.Font = FONT_DISPLAY
-themeTitle.TextSize = 11
-themeTitle.TextXAlignment = Enum.TextXAlignment.Left
-themeTitle.ZIndex = 9
-themeTitle.Parent = setupWrap
+    local themeTitle = Instance.new("TextLabel")
+    themeTitle.Size = UDim2.new(1, 0, 0, 18)
+    themeTitle.BackgroundTransparency = 1
+    themeTitle.Text = "THEME"
+    themeTitle.TextColor3 = T.text2
+    themeTitle.Font = FONT_DISPLAY
+    themeTitle.TextSize = 11
+    themeTitle.TextXAlignment = Enum.TextXAlignment.Left
+    themeTitle.ZIndex = 9
+    themeTitle.Parent = setupWrap
 
-local themeGrid = Instance.new("Frame")
-themeGrid.Size = UDim2.new(1, 0, 0, 130)
-themeGrid.Position = UDim2.new(0, 0, 0, 24)
-themeGrid.BackgroundTransparency = 1
-themeGrid.ZIndex = 8
-themeGrid.Parent = setupWrap
+    local themeGrid = Instance.new("Frame")
+    themeGrid.Size = UDim2.new(1, 0, 0, 130)
+    themeGrid.Position = UDim2.new(0, 0, 0, 24)
+    themeGrid.BackgroundTransparency = 1
+    themeGrid.ZIndex = 8
+    themeGrid.Parent = setupWrap
 
-local themeButtons = {}
-local themeOrder = { "red", "blue", "green", "purple", "gold", "mono" }
+    themeButtons = {}
+    local themeOrder = { "red", "blue", "green", "purple", "gold", "mono" }
 
-for i, key in ipairs(themeOrder) do
-    local th = THEMES[key]
-    local col = ((i - 1) % 3) + 1
-    local row = math.floor((i - 1) / 3) + 1
-    local xPos = (col - 1) * (208 + 8)
-    local yPos = (row - 1) * (60 + 8)
+    for i, key in ipairs(themeOrder) do
+        local th = THEMES[key]
+        local col = ((i - 1) % 3) + 1
+        local row = math.floor((i - 1) / 3) + 1
+        local xPos = (col - 1) * (208 + 8)
+        local yPos = (row - 1) * (60 + 8)
 
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, 208, 0, 60)
-    b.Position = UDim2.new(0, xPos, 0, yPos)
-    b.BackgroundColor3 = T.surface2
-    b.BackgroundTransparency = 0.3
-    b.BorderSizePixel = 0
-    b.Text = ""
-    b.AutoButtonColor = false
-    b.ZIndex = 9
-    b.Parent = themeGrid
-    corner(b, 10)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, 208, 0, 60)
+        b.Position = UDim2.new(0, xPos, 0, yPos)
+        b.BackgroundColor3 = T.surface2
+        b.BackgroundTransparency = 0.3
+        b.BorderSizePixel = 0
+        b.Text = ""
+        b.AutoButtonColor = false
+        b.ZIndex = 9
+        b.Parent = themeGrid
+        corner(b, 10)
 
-    local bStroke = stroke(b, th.accent, 1.5, 0.4)
+        local bStroke = stroke(b, th.accent, 1.5, 0.4)
 
-    local swatch = Instance.new("Frame")
-    swatch.Size = UDim2.new(0, 60, 0, 40)
-    swatch.Position = UDim2.new(0, 10, 0, 10)
-    swatch.BackgroundColor3 = th.accent
-    swatch.BorderSizePixel = 0
-    swatch.ZIndex = 10
-    swatch.Parent = b
-    corner(swatch, 6)
-    grad(swatch, { th.accentHi, th.accentDeep }, 135)
+        local swatch = Instance.new("Frame")
+        swatch.Size = UDim2.new(0, 60, 0, 40)
+        swatch.Position = UDim2.new(0, 10, 0, 10)
+        swatch.BackgroundColor3 = th.accent
+        swatch.BorderSizePixel = 0
+        swatch.ZIndex = 10
+        swatch.Parent = b
+        corner(swatch, 6)
+        grad(swatch, { th.accentHi, th.accentDeep }, 135)
 
-    local nameLbl = Instance.new("TextLabel")
-    nameLbl.Size = UDim2.new(1, -90, 1, 0)
-    nameLbl.Position = UDim2.new(0, 80, 0, 0)
-    nameLbl.BackgroundTransparency = 1
-    nameLbl.Text = th.name
-    nameLbl.TextColor3 = T.text0
-    nameLbl.Font = FONT_DISPLAY
-    nameLbl.TextSize = 15
-    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-    nameLbl.ZIndex = 10
-    nameLbl.Parent = b
+        local nameLbl = Instance.new("TextLabel")
+        nameLbl.Size = UDim2.new(1, -90, 1, 0)
+        nameLbl.Position = UDim2.new(0, 80, 0, 0)
+        nameLbl.BackgroundTransparency = 1
+        nameLbl.Text = th.name
+        nameLbl.TextColor3 = T.text0
+        nameLbl.Font = FONT_DISPLAY
+        nameLbl.TextSize = 15
+        nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+        nameLbl.ZIndex = 10
+        nameLbl.Parent = b
 
-    local check = Instance.new("TextLabel")
-    check.Size = UDim2.new(0, 24, 1, 0)
-    check.Position = UDim2.new(1, -30, 0, 0)
-    check.BackgroundTransparency = 1
-    check.Text = (key == currentTheme) and "✓" or ""
-    check.TextColor3 = th.accentHi
-    check.Font = FONT_DISPLAY
-    check.TextSize = 20
-    check.ZIndex = 10
-    check.Parent = b
+        local check = Instance.new("TextLabel")
+        check.Size = UDim2.new(0, 24, 1, 0)
+        check.Position = UDim2.new(1, -30, 0, 0)
+        check.BackgroundTransparency = 1
+        check.Text = (key == currentTheme) and "✓" or ""
+        check.TextColor3 = th.accentHi
+        check.Font = FONT_DISPLAY
+        check.TextSize = 20
+        check.ZIndex = 10
+        check.Parent = b
 
-    b.MouseEnter:Connect(function()
-        tween(b, { BackgroundTransparency = 0 }, 0.15)
-        tween(bStroke, { Transparency = 0.1 }, 0.15)
-    end)
-    b.MouseLeave:Connect(function()
-        tween(b, { BackgroundTransparency = 0.3 }, 0.15)
-        tween(bStroke, { Transparency = 0.4 }, 0.15)
-    end)
+        b.MouseEnter:Connect(function()
+            tween(b, { BackgroundTransparency = 0 }, 0.15)
+            tween(bStroke, { Transparency = 0.1 }, 0.15)
+        end)
+        b.MouseLeave:Connect(function()
+            tween(b, { BackgroundTransparency = 0.3 }, 0.15)
+            tween(bStroke, { Transparency = 0.4 }, 0.15)
+        end)
 
-    b.MouseButton1Click:Connect(function()
-        for _, tb in pairs(themeButtons) do tb.check.Text = "" end
-        if rgbUI and rgbUI.customCheck then rgbUI.customCheck.Text = "" end
-        check.Text = "✓"
-        applyTheme(key)
-    end)
+        b.MouseButton1Click:Connect(function()
+            for _, tb in pairs(themeButtons) do tb.check.Text = "" end
+            if rgbUI and rgbUI.customCheck then rgbUI.customCheck.Text = "" end
+            check.Text = "✓"
+            applyTheme(key)
+        end)
 
-    themeButtons[key] = { btn = b, check = check, stroke = bStroke, swatch = swatch }
-end
+        themeButtons[key] = { btn = b, check = check, stroke = bStroke, swatch = swatch }
+    end
 
--- =========================================================
---  CUSTOM RGB SECTION
--- =========================================================
+    -- CUSTOM RGB SECTION
+    local rgbTitle = Instance.new("TextLabel")
+    rgbTitle.Size = UDim2.new(1, 0, 0, 18)
+    rgbTitle.Position = UDim2.new(0, 0, 0, 168)
+    rgbTitle.BackgroundTransparency = 1
+    rgbTitle.Text = "CUSTOM RGB"
+    rgbTitle.TextColor3 = T.text2
+    rgbTitle.Font = FONT_DISPLAY
+    rgbTitle.TextSize = 11
+    rgbTitle.TextXAlignment = Enum.TextXAlignment.Left
+    rgbTitle.ZIndex = 9
+    rgbTitle.Parent = setupWrap
 
-local rgbTitle = Instance.new("TextLabel")
-rgbTitle.Size = UDim2.new(1, 0, 0, 18)
-rgbTitle.Position = UDim2.new(0, 0, 0, 168)
-rgbTitle.BackgroundTransparency = 1
-rgbTitle.Text = "CUSTOM RGB"
-rgbTitle.TextColor3 = T.text2
-rgbTitle.Font = FONT_DISPLAY
-rgbTitle.TextSize = 11
-rgbTitle.TextXAlignment = Enum.TextXAlignment.Left
-rgbTitle.ZIndex = 9
-rgbTitle.Parent = setupWrap
+    local rgbHolder = Instance.new("Frame")
+    rgbHolder.Size = UDim2.new(1, 0, 0, 100)
+    rgbHolder.Position = UDim2.new(0, 0, 0, 192)
+    rgbHolder.BackgroundTransparency = 1
+    rgbHolder.ZIndex = 8
+    rgbHolder.Parent = setupWrap
 
-local rgbHolder = Instance.new("Frame")
-rgbHolder.Size = UDim2.new(1, 0, 0, 100)
-rgbHolder.Position = UDim2.new(0, 0, 0, 192)
-rgbHolder.BackgroundTransparency = 1
-rgbHolder.ZIndex = 8
-rgbHolder.Parent = setupWrap
-
-local previewBox = Instance.new("Frame")
-previewBox.Size = UDim2.new(0, 60, 0, 48)
-previewBox.Position = UDim2.new(0, 400, 0, 22)
-previewBox.BackgroundColor3 = Color3.fromRGB(customRGB.r, customRGB.g, customRGB.b)
-previewBox.BorderSizePixel = 0
-previewBox.ZIndex = 9
-previewBox.Parent = rgbHolder
-corner(previewBox, 6)
-stroke(previewBox, Color3.new(1,1,1), 1.5, 0.35)
-local previewGrad = grad(previewBox, {
-    Color3.fromRGB(math.min(255, customRGB.r + 40), math.min(255, customRGB.g + 40), math.min(255, customRGB.b + 40)),
-    Color3.fromRGB(math.floor(customRGB.r * 0.4), math.floor(customRGB.g * 0.4), math.floor(customRGB.b * 0.4)),
-}, 135)
-
-local applyBtn = Instance.new("TextButton")
-applyBtn.Size = UDim2.new(0, 200, 0, 48)
-applyBtn.Position = UDim2.new(0, 470, 0, 22)
-applyBtn.BackgroundColor3 = T.accent
-applyBtn.BorderSizePixel = 0
-applyBtn.Text = "APPLY CUSTOM"
-applyBtn.TextColor3 = Color3.new(1,1,1)
-applyBtn.Font = FONT_DISPLAY
-applyBtn.TextSize = 13
-applyBtn.AutoButtonColor = false
-applyBtn.ClipsDescendants = true
-applyBtn.ZIndex = 9
-applyBtn.Parent = rgbHolder
-corner(applyBtn, 8)
-local applyGrad = grad(applyBtn, { T.accentHi, T.accentDeep }, 135)
-local applyStroke = stroke(applyBtn, Color3.new(1,1,1), 1, 0.7)
-local applyCheck = Instance.new("TextLabel")
-applyCheck.Size = UDim2.new(0, 20, 1, 0)
-applyCheck.Position = UDim2.new(1, -26, 0, 0)
-applyCheck.BackgroundTransparency = 1
-applyCheck.Text = (currentTheme == "custom") and "✓" or ""
-applyCheck.TextColor3 = Color3.new(1,1,1)
-applyCheck.Font = FONT_DISPLAY
-applyCheck.TextSize = 16
-applyCheck.ZIndex = 11
-applyCheck.Parent = applyBtn
-
-onTheme(function()
-    applyGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, T.accentHi),
-        ColorSequenceKeypoint.new(1, T.accentDeep),
-    })
-end)
-
-local function updateRGBPreview()
+    local previewBox = Instance.new("Frame")
+    previewBox.Size = UDim2.new(0, 60, 0, 48)
+    previewBox.Position = UDim2.new(0, 400, 0, 22)
     previewBox.BackgroundColor3 = Color3.fromRGB(customRGB.r, customRGB.g, customRGB.b)
-    previewGrad.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(
-            math.min(255, customRGB.r + 40),
-            math.min(255, customRGB.g + 40),
-            math.min(255, customRGB.b + 40))),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(
-            math.floor(customRGB.r * 0.4),
-            math.floor(customRGB.g * 0.4),
-            math.floor(customRGB.b * 0.4))),
-    })
-end
+    previewBox.BorderSizePixel = 0
+    previewBox.ZIndex = 9
+    previewBox.Parent = rgbHolder
+    corner(previewBox, 6)
+    stroke(previewBox, Color3.new(1,1,1), 1.5, 0.35)
+    local previewGrad = grad(previewBox, {
+        Color3.fromRGB(math.min(255, customRGB.r + 40), math.min(255, customRGB.g + 40), math.min(255, customRGB.b + 40)),
+        Color3.fromRGB(math.floor(customRGB.r * 0.4), math.floor(customRGB.g * 0.4), math.floor(customRGB.b * 0.4)),
+    }, 135)
 
-local function makeRGBSlider(parent, yPos, labelText, channelColor, chanKey)
-    local rowH = 30
+    local applyBtn = Instance.new("TextButton")
+    applyBtn.Size = UDim2.new(0, 200, 0, 48)
+    applyBtn.Position = UDim2.new(0, 470, 0, 22)
+    applyBtn.BackgroundColor3 = T.accent
+    applyBtn.BorderSizePixel = 0
+    applyBtn.Text = "APPLY CUSTOM"
+    applyBtn.TextColor3 = Color3.new(1,1,1)
+    applyBtn.Font = FONT_DISPLAY
+    applyBtn.TextSize = 13
+    applyBtn.AutoButtonColor = false
+    applyBtn.ClipsDescendants = true
+    applyBtn.ZIndex = 9
+    applyBtn.Parent = rgbHolder
+    corner(applyBtn, 8)
+    local applyGrad = grad(applyBtn, { T.accentHi, T.accentDeep }, 135)
+    local applyStroke = stroke(applyBtn, Color3.new(1,1,1), 1, 0.7)
+    local applyCheck = Instance.new("TextLabel")
+    applyCheck.Size = UDim2.new(0, 20, 1, 0)
+    applyCheck.Position = UDim2.new(1, -26, 0, 0)
+    applyCheck.BackgroundTransparency = 1
+    applyCheck.Text = (currentTheme == "custom") and "✓" or ""
+    applyCheck.TextColor3 = Color3.new(1,1,1)
+    applyCheck.Font = FONT_DISPLAY
+    applyCheck.TextSize = 16
+    applyCheck.ZIndex = 11
+    applyCheck.Parent = applyBtn
 
-    local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0, 18, 0, rowH)
-    lbl.Position = UDim2.new(0, 0, 0, yPos)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = labelText
-    lbl.TextColor3 = channelColor
-    lbl.Font = FONT_DISPLAY
-    lbl.TextSize = 14
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.TextYAlignment = Enum.TextYAlignment.Center
-    lbl.ZIndex = 10
-    lbl.Parent = parent
+    onTheme(function()
+        applyGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, T.accentHi),
+            ColorSequenceKeypoint.new(1, T.accentDeep),
+        })
+    end)
 
-    local track = Instance.new("TextButton")
-    track.Size = UDim2.new(0, 300, 0, 8)
-    track.Position = UDim2.new(0, 26, 0, yPos + 11)
-    track.BackgroundColor3 = T.surface3
-    track.BorderSizePixel = 0
-    track.Text = ""
-    track.AutoButtonColor = false
-    track.ZIndex = 10
-    track.Parent = parent
-    corner(track, 4)
-
-    local initRel = math.clamp(customRGB[chanKey] / 255, 0, 1)
-
-    local fill = Instance.new("Frame")
-    fill.Size = UDim2.new(initRel, 0, 1, 0)
-    fill.BackgroundColor3 = channelColor
-    fill.BorderSizePixel = 0
-    fill.ZIndex = 11
-    fill.Parent = track
-    corner(fill, 4)
-
-    local handle = Instance.new("Frame")
-    handle.Size = UDim2.new(0, 14, 0, 14)
-    handle.Position = UDim2.new(initRel, -7, 0.5, -7)
-    handle.BackgroundColor3 = Color3.new(1, 1, 1)
-    handle.BorderSizePixel = 0
-    handle.ZIndex = 12
-    handle.Parent = track
-    corner(handle, 999)
-    stroke(handle, channelColor, 2, 0)
-
-    local num = Instance.new("TextLabel")
-    num.Size = UDim2.new(0, 34, 0, rowH)
-    num.Position = UDim2.new(0, 332, 0, yPos)
-    num.BackgroundTransparency = 1
-    num.Text = tostring(math.floor(customRGB[chanKey] + 0.5))
-    num.TextColor3 = T.text0
-    num.Font = FONT_DISPLAY
-    num.TextSize = 12
-    num.TextXAlignment = Enum.TextXAlignment.Right
-    num.TextYAlignment = Enum.TextYAlignment.Center
-    num.ZIndex = 10
-    num.Parent = parent
-
-    local dragging = false
-
-    local function setFromRel(rel)
-        rel = math.clamp(rel, 0, 1)
-        local val = math.floor(rel * 255 + 0.5)
-        customRGB[chanKey] = val
-        fill.Size = UDim2.new(rel, 0, 1, 0)
-        handle.Position = UDim2.new(rel, -7, 0.5, -7)
-        num.Text = tostring(val)
-        updateRGBPreview()
+    local function updateRGBPreview()
+        previewBox.BackgroundColor3 = Color3.fromRGB(customRGB.r, customRGB.g, customRGB.b)
+        previewGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(
+                math.min(255, customRGB.r + 40),
+                math.min(255, customRGB.g + 40),
+                math.min(255, customRGB.b + 40))),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(
+                math.floor(customRGB.r * 0.4),
+                math.floor(customRGB.g * 0.4),
+                math.floor(customRGB.b * 0.4))),
+        })
     end
 
-    local function updateFromMouseX(mx)
-        local ap = track.AbsolutePosition
-        local asz = track.AbsoluteSize
-        if asz.X <= 0 then return end
-        setFromRel((mx - ap.X) / asz.X)
-    end
+    local function makeRGBSlider(parent, yPos, labelText, channelColor, chanKey)
+        local rowH = 30
 
-    track.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            updateFromMouseX(UserInputService:GetMouseLocation().X)
-        elseif input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            updateFromMouseX(input.Position.X)
-        end
-    end)
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(0, 18, 0, rowH)
+        lbl.Position = UDim2.new(0, 0, 0, yPos)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = labelText
+        lbl.TextColor3 = channelColor
+        lbl.Font = FONT_DISPLAY
+        lbl.TextSize = 14
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.TextYAlignment = Enum.TextYAlignment.Center
+        lbl.ZIndex = 10
+        lbl.Parent = parent
 
-    UserInputService.InputChanged:Connect(function(input)
-        if not dragging then return end
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            updateFromMouseX(UserInputService:GetMouseLocation().X)
-        elseif input.UserInputType == Enum.UserInputType.Touch then
-            updateFromMouseX(input.Position.X)
-        end
-    end)
+        local track = Instance.new("TextButton")
+        track.Size = UDim2.new(0, 300, 0, 8)
+        track.Position = UDim2.new(0, 26, 0, yPos + 11)
+        track.BackgroundColor3 = T.surface3
+        track.BorderSizePixel = 0
+        track.Text = ""
+        track.AutoButtonColor = false
+        track.ZIndex = 10
+        track.Parent = parent
+        corner(track, 4)
 
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1
-        or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
-    end)
+        local initRel = math.clamp(customRGB[chanKey] / 255, 0, 1)
 
-    return {
-        setValue = function(v)
-            local rel = math.clamp(v / 255, 0, 1)
+        local fill = Instance.new("Frame")
+        fill.Size = UDim2.new(initRel, 0, 1, 0)
+        fill.BackgroundColor3 = channelColor
+        fill.BorderSizePixel = 0
+        fill.ZIndex = 11
+        fill.Parent = track
+        corner(fill, 4)
+
+        local handle = Instance.new("Frame")
+        handle.Size = UDim2.new(0, 14, 0, 14)
+        handle.Position = UDim2.new(initRel, -7, 0.5, -7)
+        handle.BackgroundColor3 = Color3.new(1, 1, 1)
+        handle.BorderSizePixel = 0
+        handle.ZIndex = 12
+        handle.Parent = track
+        corner(handle, 999)
+        stroke(handle, channelColor, 2, 0)
+
+        local num = Instance.new("TextLabel")
+        num.Size = UDim2.new(0, 34, 0, rowH)
+        num.Position = UDim2.new(0, 332, 0, yPos)
+        num.BackgroundTransparency = 1
+        num.Text = tostring(math.floor(customRGB[chanKey] + 0.5))
+        num.TextColor3 = T.text0
+        num.Font = FONT_DISPLAY
+        num.TextSize = 12
+        num.TextXAlignment = Enum.TextXAlignment.Right
+        num.TextYAlignment = Enum.TextYAlignment.Center
+        num.ZIndex = 10
+        num.Parent = parent
+
+        local dragging = false
+
+        local function setFromRel(rel)
+            rel = math.clamp(rel, 0, 1)
+            local val = math.floor(rel * 255 + 0.5)
+            customRGB[chanKey] = val
             fill.Size = UDim2.new(rel, 0, 1, 0)
             handle.Position = UDim2.new(rel, -7, 0.5, -7)
-            num.Text = tostring(math.floor(v + 0.5))
-        end,
-    }
-end
-
-local rgbUI = {}
-rgbUI.sliderR = makeRGBSlider(rgbHolder, 0,  "R", Color3.fromRGB(230, 60, 70),  "r")
-rgbUI.sliderG = makeRGBSlider(rgbHolder, 32, "G", Color3.fromRGB(60, 220, 100), "g")
-rgbUI.sliderB = makeRGBSlider(rgbHolder, 64, "B", Color3.fromRGB(60, 130, 240), "b")
-rgbUI.customCheck = applyCheck
-rgbUI.syncFromState = function()
-    rgbUI.sliderR.setValue(customRGB.r)
-    rgbUI.sliderG.setValue(customRGB.g)
-    rgbUI.sliderB.setValue(customRGB.b)
-    updateRGBPreview()
-    applyCheck.Text = (currentTheme == "custom") and "✓" or ""
-end
-
-applyBtn.MouseEnter:Connect(function()
-    tween(applyBtn, { BackgroundTransparency = 0.1 }, 0.15)
-    tween(applyStroke, { Transparency = 0.3 }, 0.15)
-end)
-applyBtn.MouseLeave:Connect(function()
-    tween(applyBtn, { BackgroundTransparency = 0 }, 0.15)
-    tween(applyStroke, { Transparency = 0.7 }, 0.15)
-end)
-
-applyBtn.MouseButton1Click:Connect(function()
-    THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
-    for _, tb in pairs(themeButtons) do tb.check.Text = "" end
-    applyCheck.Text = "✓"
-    applyTheme("custom")
-end)
-
--- =========================================================
---  DATA MANAGEMENT
--- =========================================================
-
-local dataTitle = Instance.new("TextLabel")
-dataTitle.Size = UDim2.new(1, 0, 0, 18)
-dataTitle.Position = UDim2.new(0, 0, 0, 310)
-dataTitle.BackgroundTransparency = 1
-dataTitle.Text = "DATA MANAGEMENT"
-dataTitle.TextColor3 = T.text2
-dataTitle.Font = FONT_DISPLAY
-dataTitle.TextSize = 11
-dataTitle.TextXAlignment = Enum.TextXAlignment.Left
-dataTitle.ZIndex = 9
-dataTitle.Parent = setupWrap
-
-local function makeDataBtn(xPos, yPos, w, text, onClick)
-    local b = Instance.new("TextButton")
-    b.Size = UDim2.new(0, w, 0, 34)
-    b.Position = UDim2.new(0, xPos, 0, yPos)
-    b.BackgroundColor3 = T.surface2
-    b.BackgroundTransparency = 0.3
-    b.BorderSizePixel = 0
-    b.Text = text
-    b.TextColor3 = T.text1
-    b.Font = FONT_DISPLAY
-    b.TextSize = 12
-    b.AutoButtonColor = false
-    b.ZIndex = 9
-    b.Parent = setupWrap
-    corner(b, 8)
-    local st = stroke(b, T.danger, 1, 0.4)
-
-    b.MouseEnter:Connect(function()
-        tween(b, { BackgroundTransparency = 0.05, TextColor3 = T.danger }, 0.15)
-        tween(st, { Transparency = 0.1 }, 0.15)
-    end)
-    b.MouseLeave:Connect(function()
-        tween(b, { BackgroundTransparency = 0.3, TextColor3 = T.text1 }, 0.15)
-        tween(st, { Transparency = 0.4 }, 0.15)
-    end)
-
-    b.MouseButton1Click:Connect(onClick)
-    return b
-end
-
-makeDataBtn(0,   334, 210, "CLEAR FAVORITES", function()
-    favOn = {}
-    favOrder = {}
-    for _, entry in pairs(builtin) do
-        if entry.ui and entry.ui.star then
-            entry.ui.star.Text = "☆"
-            entry.ui.star.TextColor3 = T.text2
+            num.Text = tostring(val)
+            updateRGBPreview()
         end
+
+        local function updateFromMouseX(mx)
+            local ap = track.AbsolutePosition
+            local asz = track.AbsoluteSize
+            if asz.X <= 0 then return end
+            setFromRel((mx - ap.X) / asz.X)
+        end
+
+        track.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                updateFromMouseX(UserInputService:GetMouseLocation().X)
+            elseif input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true
+                updateFromMouseX(input.Position.X)
+            end
+        end)
+
+        UserInputService.InputChanged:Connect(function(input)
+            if not dragging then return end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                updateFromMouseX(UserInputService:GetMouseLocation().X)
+            elseif input.UserInputType == Enum.UserInputType.Touch then
+                updateFromMouseX(input.Position.X)
+            end
+        end)
+
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = false
+            end
+        end)
+
+        return {
+            setValue = function(v)
+                local rel = math.clamp(v / 255, 0, 1)
+                fill.Size = UDim2.new(rel, 0, 1, 0)
+                handle.Position = UDim2.new(rel, -7, 0.5, -7)
+                num.Text = tostring(math.floor(v + 0.5))
+            end,
+        }
     end
-    saveFavorites()
-    renderFaves()
-end)
 
-makeDataBtn(220, 334, 210, "CLEAR HISTORY", function()
-    history = {}
-    saveHistory()
-    renderHistory()
-end)
+    rgbUI = {}
+    rgbUI.sliderR = makeRGBSlider(rgbHolder, 0,  "R", Color3.fromRGB(230, 60, 70),  "r")
+    rgbUI.sliderG = makeRGBSlider(rgbHolder, 32, "G", Color3.fromRGB(60, 220, 100), "g")
+    rgbUI.sliderB = makeRGBSlider(rgbHolder, 64, "B", Color3.fromRGB(60, 130, 240), "b")
+    rgbUI.customCheck = applyCheck
+    rgbUI.syncFromState = function()
+        rgbUI.sliderR.setValue(customRGB.r)
+        rgbUI.sliderG.setValue(customRGB.g)
+        rgbUI.sliderB.setValue(customRGB.b)
+        updateRGBPreview()
+        applyCheck.Text = (currentTheme == "custom") and "✓" or ""
+    end
 
-makeDataBtn(0,   376, 210, "CLEAR CACHE", function()
-    if not FS.ok then return end
-    pcall(function()
-        if type(listfiles) ~= "function" then return end
-        for _, f in ipairs(listfiles(CACHE_DIR)) do
-            pcall(delfile, f)
-        end
+    applyBtn.MouseEnter:Connect(function()
+        tween(applyBtn, { BackgroundTransparency = 0.1 }, 0.15)
+        tween(applyStroke, { Transparency = 0.3 }, 0.15)
     end)
-end)
+    applyBtn.MouseLeave:Connect(function()
+        tween(applyBtn, { BackgroundTransparency = 0 }, 0.15)
+        tween(applyStroke, { Transparency = 0.7 }, 0.15)
+    end)
 
-makeDataBtn(220, 376, 210, "RESET THEME", function()
-    for k, btn in pairs(themeButtons) do btn.check.Text = "" end
-    if themeButtons.red then themeButtons.red.check.Text = "✓" end
-    if rgbUI.customCheck then rgbUI.customCheck.Text = "" end
-    applyTheme("red")
-end)
+    applyBtn.MouseButton1Click:Connect(function()
+        THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
+        for _, tb in pairs(themeButtons) do tb.check.Text = "" end
+        applyCheck.Text = "✓"
+        applyTheme("custom")
+    end)
 
-local infoLbl = Instance.new("TextLabel")
-infoLbl.Size = UDim2.new(1, 0, 0, 60)
-infoLbl.Position = UDim2.new(0, 0, 0, 424)
-infoLbl.BackgroundTransparency = 1
-infoLbl.Text = "> folder: " .. (FS.ok and (FOLDER .. "/") or "not available (executor)")
-    .. "\n> saved: favorites.json · history.json · user_scripts.json · settings.json"
-    .. "\n> cache: " .. CACHE_DIR
-infoLbl.TextColor3 = T.text3
-infoLbl.Font = FONT_DISPLAY
-infoLbl.TextSize = 10
-infoLbl.TextXAlignment = Enum.TextXAlignment.Left
-infoLbl.TextYAlignment = Enum.TextYAlignment.Top
-infoLbl.ZIndex = 9
-infoLbl.Parent = setupWrap
+    -- DATA MANAGEMENT
+    local dataTitle = Instance.new("TextLabel")
+    dataTitle.Size = UDim2.new(1, 0, 0, 18)
+    dataTitle.Position = UDim2.new(0, 0, 0, 310)
+    dataTitle.BackgroundTransparency = 1
+    dataTitle.Text = "DATA MANAGEMENT"
+    dataTitle.TextColor3 = T.text2
+    dataTitle.Font = FONT_DISPLAY
+    dataTitle.TextSize = 11
+    dataTitle.TextXAlignment = Enum.TextXAlignment.Left
+    dataTitle.ZIndex = 9
+    dataTitle.Parent = setupWrap
+
+    local function makeDataBtn(xPos, yPos, w, text, onClick)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, w, 0, 34)
+        b.Position = UDim2.new(0, xPos, 0, yPos)
+        b.BackgroundColor3 = T.surface2
+        b.BackgroundTransparency = 0.3
+        b.BorderSizePixel = 0
+        b.Text = text
+        b.TextColor3 = T.text1
+        b.Font = FONT_DISPLAY
+        b.TextSize = 12
+        b.AutoButtonColor = false
+        b.ZIndex = 9
+        b.Parent = setupWrap
+        corner(b, 8)
+        local st = stroke(b, T.danger, 1, 0.4)
+
+        b.MouseEnter:Connect(function()
+            tween(b, { BackgroundTransparency = 0.05, TextColor3 = T.danger }, 0.15)
+            tween(st, { Transparency = 0.1 }, 0.15)
+        end)
+        b.MouseLeave:Connect(function()
+            tween(b, { BackgroundTransparency = 0.3, TextColor3 = T.text1 }, 0.15)
+            tween(st, { Transparency = 0.4 }, 0.15)
+        end)
+
+        b.MouseButton1Click:Connect(onClick)
+        return b
+    end
+
+    makeDataBtn(0,   334, 210, "CLEAR FAVORITES", function()
+        favOn = {}
+        favOrder = {}
+        for _, entry in pairs(builtin) do
+            if entry.ui and entry.ui.star then
+                entry.ui.star.Text = "☆"
+                entry.ui.star.TextColor3 = T.text2
+            end
+        end
+        saveFavorites()
+        renderFaves()
+    end)
+
+    makeDataBtn(220, 334, 210, "CLEAR HISTORY", function()
+        history = {}
+        saveHistory()
+        renderHistory()
+    end)
+
+    makeDataBtn(0,   376, 210, "CLEAR CACHE", function()
+        if not FS.ok then return end
+        pcall(function()
+            if type(listfiles) ~= "function" then return end
+            for _, f in ipairs(listfiles(CACHE_DIR)) do
+                pcall(delfile, f)
+            end
+        end)
+    end)
+
+    makeDataBtn(220, 376, 210, "RESET THEME", function()
+        for k, btn in pairs(themeButtons) do btn.check.Text = "" end
+        if themeButtons.red then themeButtons.red.check.Text = "✓" end
+        if rgbUI.customCheck then rgbUI.customCheck.Text = "" end
+        applyTheme("red")
+    end)
+
+    local infoLbl = Instance.new("TextLabel")
+    infoLbl.Size = UDim2.new(1, 0, 0, 60)
+    infoLbl.Position = UDim2.new(0, 0, 0, 424)
+    infoLbl.BackgroundTransparency = 1
+    infoLbl.Text = "> folder: " .. (FS.ok and (FOLDER .. "/") or "not available (executor)")
+        .. "\n> saved: favorites.json · history.json · user_scripts.json · settings.json"
+        .. "\n> cache: " .. CACHE_DIR
+    infoLbl.TextColor3 = T.text3
+    infoLbl.Font = FONT_DISPLAY
+    infoLbl.TextSize = 10
+    infoLbl.TextXAlignment = Enum.TextXAlignment.Left
+    infoLbl.TextYAlignment = Enum.TextYAlignment.Top
+    infoLbl.ZIndex = 9
+    infoLbl.Parent = setupWrap
+end  -- конец SETTINGS блока
 
 -- =========================================================
 --  FOOTER
@@ -2543,93 +2547,100 @@ tagLbl.TextColor3 = T.text3; tagLbl.Font = FONT_DISPLAY
 tagLbl.TextSize = 10; tagLbl.TextXAlignment = Enum.TextXAlignment.Right
 tagLbl.ZIndex = 10; tagLbl.Parent = footer
 
-local fpsAcc, fpsFrames = 0, 0
-local fpsConn
-fpsConn = RunService.RenderStepped:Connect(function(dt)
-    if not main.Parent then if fpsConn then fpsConn:Disconnect() end; return end
-    fpsAcc = fpsAcc + dt; fpsFrames = fpsFrames + 1
-    if fpsAcc >= 0.5 then
-        fpsLbl.Text = "fps: " .. math.floor(fpsFrames / fpsAcc + 0.5)
-        fpsAcc = 0; fpsFrames = 0
-    end
-end)
+do
+    local fpsAcc, fpsFrames = 0, 0
+    local fpsConn
+    fpsConn = RunService.RenderStepped:Connect(function(dt)
+        if not main.Parent then if fpsConn then fpsConn:Disconnect() end; return end
+        fpsAcc = fpsAcc + dt; fpsFrames = fpsFrames + 1
+        if fpsAcc >= 0.5 then
+            fpsLbl.Text = "fps: " .. math.floor(fpsFrames / fpsAcc + 0.5)
+            fpsAcc = 0; fpsFrames = 0
+        end
+    end)
+end
 
 -- =========================================================
 --  MINI REOPEN
 -- =========================================================
 
-local MINI_DEFAULT_POS = UDim2.new(0.5, -26, 0, 80)
+do
+    local MINI_DEFAULT_POS = UDim2.new(0.5, -26, 0, 80)
 
-local miniIcon = Instance.new("Frame")
-miniIcon.Name = "MiniReopen"
-miniIcon.Size = UDim2.new(0,52,0,52); miniIcon.Position = MINI_DEFAULT_POS
-miniIcon.BackgroundColor3 = T.surface2; miniIcon.BorderSizePixel = 0
-miniIcon.Visible = false; miniIcon.Active = true; miniIcon.ZIndex = 250
-miniIcon.ClipsDescendants = true; miniIcon.Parent = gui
-corner(miniIcon, 14); local miniStroke = stroke(miniIcon, T.accent, 1.5, 0.4)
+    local miniIcon = Instance.new("Frame")
+    miniIcon.Name = "MiniReopen"
+    miniIcon.Size = UDim2.new(0,52,0,52); miniIcon.Position = MINI_DEFAULT_POS
+    miniIcon.BackgroundColor3 = T.surface2; miniIcon.BorderSizePixel = 0
+    miniIcon.Visible = false; miniIcon.Active = true; miniIcon.ZIndex = 250
+    miniIcon.ClipsDescendants = true; miniIcon.Parent = gui
+    corner(miniIcon, 14); local miniStroke = stroke(miniIcon, T.accent, 1.5, 0.4)
 
-onTheme(function() miniStroke.Color = T.accent end)
+    onTheme(function() miniStroke.Color = T.accent end)
 
-local miniImg = Instance.new("ImageLabel")
-miniImg.Size = UDim2.new(1,0,1,0); miniImg.BackgroundTransparency = 1
-miniImg.Image = HUB_ICON; miniImg.ScaleType = Enum.ScaleType.Crop
-miniImg.ZIndex = 252; miniImg.Parent = miniIcon
+    local miniImg = Instance.new("ImageLabel")
+    miniImg.Size = UDim2.new(1,0,1,0); miniImg.BackgroundTransparency = 1
+    miniImg.Image = HUB_ICON; miniImg.ScaleType = Enum.ScaleType.Crop
+    miniImg.ZIndex = 252; miniImg.Parent = miniIcon
 
-local miniBtn = Instance.new("TextButton")
-miniBtn.Size = UDim2.new(1,0,1,0); miniBtn.BackgroundTransparency = 1
-miniBtn.Text = ""; miniBtn.AutoButtonColor = false; miniBtn.Active = true
-miniBtn.ZIndex = 253; miniBtn.Parent = miniIcon
+    local miniBtn = Instance.new("TextButton")
+    miniBtn.Size = UDim2.new(1,0,1,0); miniBtn.BackgroundTransparency = 1
+    miniBtn.Text = ""; miniBtn.AutoButtonColor = false; miniBtn.Active = true
+    miniBtn.ZIndex = 253; miniBtn.Parent = miniIcon
 
-local miniDragging, miniMoved = false, false
-local miniStartMouse = Vector2.new(0,0)
-local miniStartPos   = UDim2.new(0,0,0,0)
+    local miniDragging, miniMoved = false, false
+    local miniStartMouse = Vector2.new(0,0)
+    local miniStartPos   = UDim2.new(0,0,0,0)
 
-local miniDragConn = RunService.RenderStepped:Connect(function()
-    if not miniDragging or not miniIcon.Parent then return end
-    local mp = UserInputService:GetMouseLocation()
-    local dx = mp.X - miniStartMouse.X
-    local dy = mp.Y - miniStartMouse.Y
-    if math.abs(dx) > 2 or math.abs(dy) > 2 then miniMoved = true end
-    local nx = miniStartPos.X.Offset + dx
-    local ny = miniStartPos.Y.Offset + dy
-    local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920,1080)
-    local sz = miniIcon.AbsoluteSize
-    nx = math.clamp(nx, 0, math.max(0, vp.X - sz.X))
-    ny = math.clamp(ny, 0, math.max(0, vp.Y - sz.Y))
-    miniIcon.Position = UDim2.new(0, nx, 0, ny)
-end)
+    RunService.RenderStepped:Connect(function()
+        if not miniDragging or not miniIcon.Parent then return end
+        local mp = UserInputService:GetMouseLocation()
+        local dx = mp.X - miniStartMouse.X
+        local dy = mp.Y - miniStartMouse.Y
+        if math.abs(dx) > 2 or math.abs(dy) > 2 then miniMoved = true end
+        local nx = miniStartPos.X.Offset + dx
+        local ny = miniStartPos.Y.Offset + dy
+        local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920,1080)
+        local sz = miniIcon.AbsoluteSize
+        nx = math.clamp(nx, 0, math.max(0, vp.X - sz.X))
+        ny = math.clamp(ny, 0, math.max(0, vp.Y - sz.Y))
+        miniIcon.Position = UDim2.new(0, nx, 0, ny)
+    end)
 
-miniBtn.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1
-    or input.UserInputType == Enum.UserInputType.Touch then
-        miniDragging = true; miniMoved = false
-        miniStartMouse = UserInputService:GetMouseLocation()
-        local abs = miniIcon.AbsolutePosition
-        miniStartPos = UDim2.new(0, abs.X, 0, abs.Y)
-    end
-end)
+    miniBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            miniDragging = true; miniMoved = false
+            miniStartMouse = UserInputService:GetMouseLocation()
+            local abs = miniIcon.AbsolutePosition
+            miniStartPos = UDim2.new(0, abs.X, 0, abs.Y)
+        end
+    end)
 
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType ~= Enum.UserInputType.MouseButton1
-    and input.UserInputType ~= Enum.UserInputType.Touch then return end
-    if not miniDragging then return end
-    miniDragging = false
-    if not miniMoved then
-        miniIcon.Visible = false
-        container.Visible = true
-        containerScale.Scale = 0.5
-        tween(containerScale, { Scale = 1 }, 0.35, Enum.EasingStyle.Back)
-    end
-end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType ~= Enum.UserInputType.MouseButton1
+        and input.UserInputType ~= Enum.UserInputType.Touch then return end
+        if not miniDragging then return end
+        miniDragging = false
+        if not miniMoved then
+            miniIcon.Visible = false
+            container.Visible = true
+            containerScale.Scale = 0.5
+            tween(containerScale, { Scale = 1 }, 0.35, Enum.EasingStyle.Back)
+        end
+    end)
 
-minimize.MouseButton1Click:Connect(function()
-    container.Visible = false
-    miniIcon.Visible = true
-end)
+    minimize.MouseButton1Click:Connect(function()
+        container.Visible = false
+        miniIcon.Visible = true
+    end)
+end
 
 -- =========================================================
 --  PANIC / SCREENSHOT
 -- =========================================================
+
+local screenshotMode = false
+local restoreDot
 
 local function panicWipe()
     local targets = {
@@ -2658,8 +2669,6 @@ local function panicWipe()
     pcall(function() gui:Destroy() end)
 end
 
-local screenshotMode = false
-local restoreDot
 local function ensureRestoreDot()
     if restoreDot and restoreDot.Parent then return restoreDot end
     restoreDot = Instance.new("TextButton")
@@ -2685,7 +2694,7 @@ function setScreenshot(on)
     screenshotMode = on
     if on then
         container.Visible = false
-        miniIcon.Visible = false
+        if miniIcon then miniIcon.Visible = false end
         ensureRestoreDot().Visible = true
     else
         if restoreDot then restoreDot.Visible = false end
@@ -2820,7 +2829,6 @@ function applyTheme(name)
 
     for _, fn in ipairs(themeAppliers) do pcall(fn) end
 
-    -- refresh all state machines
     for _, entry in pairs(builtin) do
         if entry.sm then entry.sm.refresh() end
     end
@@ -2847,7 +2855,6 @@ loadFavorites()
 loadHistory()
 loadUserScripts()
 
--- Apply theme (without saving again)
 do
     local theme = THEMES[currentTheme] or THEMES.red
     T.accent     = theme.accent
@@ -2866,7 +2873,6 @@ do
     for _, entry in ipairs(userScripts) do if entry.sm then entry.sm.refresh() end end
 end
 
--- mark initial theme check
 for k, btn in pairs(themeButtons) do
     btn.check.Text = (k == currentTheme) and "✓" or ""
 end
