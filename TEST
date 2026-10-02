@@ -1,6 +1,7 @@
 --[[
-    A-90 HUB v6.0 [USER SCRIPTS + THEMES]
+    A-90 HUB v8.5 [USER SCRIPTS + THEMES + CFG + AUTOLOAD + GLOBAL SEARCH + HUB CHAT]
     Fox / for Jack
+    Changelog v8.5: hub chat (F3) + R4NS0M nametag + message hook
 ]]
 
 local CoreGui           = game:GetService("CoreGui")
@@ -16,9 +17,9 @@ local FONT_DISPLAY = Enum.Font.Code
 local FONT_BODY    = Enum.Font.Code
 local HUB_ICON     = "rbxassetid://128896072556015"
 
--- =========================================================
---  OWNERS
--- =========================================================
+local CHAT_HOTKEY = Enum.KeyCode.F3
+local CHAT_TAG    = "★ R4NS0M USER ★"
+local CHAT_PREFIX = "[R4NS0M]"
 
 local OWNER_ID        = 8761682431
 local OWNER_FRIEND_ID = 3190738883
@@ -27,10 +28,6 @@ local LP = Players.LocalPlayer
 local userTier = "user"
 if LP.UserId == OWNER_ID then userTier = "owner"
 elseif LP.UserId == OWNER_FRIEND_ID then userTier = "owner_friend" end
-
--- =========================================================
---  GAME DETECTION
--- =========================================================
 
 local DOORS_PLACE_IDS = { [6516141723] = true, [14542615721] = true }
 local function isDoorsGame()
@@ -43,10 +40,6 @@ local function isDoorsGame()
     return false
 end
 
--- =========================================================
---  URLS
--- =========================================================
-
 local URLS = {
     IY          = "https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source",
     FLY         = "https://rawscripts.net/raw/Universal-Script-flight-of-the-Invincible-59729",
@@ -58,10 +51,6 @@ local URLS = {
     HYDROXIDE   = "https://raw.githubusercontent.com/Upbolt/Hydroxide/revision/init.lua",
     CMDX        = "https://raw.githubusercontent.com/CMD-X/CMD-X/master/Source",
 }
-
--- =========================================================
---  THEMES
--- =========================================================
 
 local THEMES = {
     red = {
@@ -128,11 +117,13 @@ local THEMES = {
 
 local currentTheme = "red"
 
--- =========================================================
---  CUSTOM RGB THEME
--- =========================================================
-
 local customRGB = { r = 230, g = 45, b = 60 }
+
+local settings = {
+    autoload  = nil,
+    autoQueue = false,
+    hubUrl    = "",
+}
 
 local function buildCustomTheme(r, g, b)
     r = math.clamp(math.floor(r + 0.5), 0, 255)
@@ -151,10 +142,6 @@ local function buildCustomTheme(r, g, b)
 end
 
 THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
-
--- =========================================================
---  DESIGN TOKENS
--- =========================================================
 
 local T = {
     surface0 = Color3.fromRGB(9, 8, 11),
@@ -187,18 +174,10 @@ local BTN_LOADING = { T.surface3, T.surface2, T.accent, T.ember }
 local BTN_LOADED  = { T.ember, T.accent, T.accentHi, T.emberHi }
 local BTN_ERROR   = { T.accentDeep, T.surface0, T.danger, T.accentDeep }
 
--- =========================================================
---  CLEANUP
--- =========================================================
-
 for _, n in ipairs({ "A90_HUB", "A90_HUB_v3", "A90_HUB_v4", "A90_HUB_v5" }) do
     local old = CoreGui:FindFirstChild(n)
     if old then old:Destroy() end
 end
-
--- =========================================================
---  FILE PERSISTENCE
--- =========================================================
 
 local FOLDER       = "A90_HUB"
 local CACHE_DIR    = FOLDER .. "/cache"
@@ -272,10 +251,6 @@ local function fetchScript(url)
     error("fetch failed and no cache")
 end
 
--- =========================================================
---  GUI ROOT
--- =========================================================
-
 local gui = Instance.new("ScreenGui")
 gui.Name = "A90_HUB"
 gui.ResetOnSpawn = false
@@ -283,10 +258,6 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 200
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = CoreGui
-
--- =========================================================
---  HELPERS
--- =========================================================
 
 local GLITCH_CHARS = "!@#$%^&*<>?/\\|=+~0123456789ABCDEF"
 local function scramble(text, count)
@@ -335,10 +306,6 @@ end
 
 local themeAppliers = {}
 local function onTheme(fn) table.insert(themeAppliers, fn) end
-
--- =========================================================
---  INTRO
--- =========================================================
 
 local function playIntro(onComplete)
     local veil = Instance.new("Frame")
@@ -393,10 +360,6 @@ local function playIntro(onComplete)
     end)
 end
 
--- =========================================================
---  CONTAINER
--- =========================================================
-
 local W, H = 720, 540
 
 local container = Instance.new("Frame")
@@ -424,10 +387,6 @@ do
     end
     shadow(16, 0.94); shadow(10, 0.88); shadow(5, 0.82); shadow(2, 0.68)
 end
-
--- =========================================================
---  MAIN PANEL
--- =========================================================
 
 local main = Instance.new("Frame")
 main.Size = UDim2.new(1,0,1,0)
@@ -495,15 +454,25 @@ do
     end)
 end
 
--- =========================================================
---  HEADER
--- =========================================================
-
-local header = Instance.new("Frame")
-header.Size = UDim2.new(1,0,0,76); header.BackgroundTransparency = 1
-header.ZIndex = 10; header.Parent = main
+local registry    = {}
+local builtin     = {}
+local favOn       = {}
+local favOrder    = {}
+local userScripts = {}
+local rgbUI
+local themeButtons
+local minimize
+local miniIcon
+local applyTierBadge = function() end
+local autoStatusRef = nil
+local hubChatUI      = nil
+local chatMessages   = {}
 
 do
+    local header = Instance.new("Frame")
+    header.Size = UDim2.new(1,0,0,76); header.BackgroundTransparency = 1
+    header.ZIndex = 10; header.Parent = main
+
     local iconBox = Instance.new("Frame")
     iconBox.Size = UDim2.new(0,44,0,44); iconBox.Position = UDim2.new(0,20,0,16)
     iconBox.BackgroundColor3 = T.surface2; iconBox.BorderSizePixel = 0
@@ -594,7 +563,7 @@ do
 
     local verLbl = Instance.new("TextLabel")
     verLbl.Size = UDim2.new(1,0,1,0); verLbl.BackgroundTransparency = 1
-    verLbl.Text = "v6.0"; verLbl.TextColor3 = T.accentHi
+    verLbl.Text = "v8.5"; verLbl.TextColor3 = T.accentHi
     verLbl.Font = FONT_DISPLAY; verLbl.TextSize = 10; verLbl.ZIndex = 12; verLbl.Parent = verBadge
 
     onTheme(function()
@@ -602,7 +571,7 @@ do
         verLbl.TextColor3 = T.accentHi
     end)
 
-    local minimize = Instance.new("TextButton")
+    minimize = Instance.new("TextButton")
     minimize.Size = UDim2.new(0, 32, 0, 32)
     minimize.Position = UDim2.new(1, -92, 0, 22)
     minimize.BackgroundColor3 = T.surface3
@@ -648,10 +617,6 @@ do
     close.MouseButton1Click:Connect(function() gui:Destroy() end)
 end
 
--- =========================================================
---  SEARCH BAR
--- =========================================================
-
 local SEARCH_Y = 84
 local SEARCH_H = 26
 
@@ -679,7 +644,7 @@ end)
 local searchInput = Instance.new("TextBox")
 searchInput.Size = UDim2.new(1, -80, 1, 0); searchInput.Position = UDim2.new(0, 32, 0, 0)
 searchInput.BackgroundTransparency = 1; searchInput.Text = ""
-searchInput.PlaceholderText = "search tiles..."
+searchInput.PlaceholderText = "search all tiles..."
 searchInput.PlaceholderColor3 = T.text3; searchInput.TextColor3 = T.text0
 searchInput.Font = FONT_DISPLAY; searchInput.TextSize = 12
 searchInput.TextXAlignment = Enum.TextXAlignment.Left
@@ -694,10 +659,6 @@ searchClear.ZIndex = 9; searchClear.Parent = searchBar
 searchClear.MouseEnter:Connect(function() searchClear.TextColor3 = T.danger end)
 searchClear.MouseLeave:Connect(function() searchClear.TextColor3 = T.text2 end)
 searchClear.MouseButton1Click:Connect(function() searchInput.Text = "" end)
-
--- =========================================================
---  TAB BAR
--- =========================================================
 
 local TAB_Y = 118
 local TAB_H = 40
@@ -732,6 +693,7 @@ local pillGrad = grad(pill, { T.accentHi, T.accentEdge }, 135)
 stroke(pill, Color3.new(1,1,1), 1, 0.85)
 
 onTheme(function()
+    pill.BackgroundColor3 = T.accent
     pillGrad.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, T.accentHi),
         ColorSequenceKeypoint.new(1, T.accentEdge),
@@ -762,10 +724,6 @@ for i, tab in ipairs(TABS) do
     tabIcons[tab.name] = { icon = icon, label = label }
 end
 
--- =========================================================
---  BODY + PAGES
--- =========================================================
-
 local BODY_Y = TAB_Y + TAB_H + 14
 local BODY_H = H - BODY_Y - 40
 
@@ -780,23 +738,6 @@ for _, tab in ipairs(TABS) do
     page.Visible = (tab.name == "MAIN"); page.ZIndex = 8; page.Parent = body
     pages[tab.name] = page
 end
-
--- =========================================================
---  REGISTRIES + forward declarations
--- =========================================================
-
-local registry    = {}
-local builtin     = {}
-local favOn       = {}
-local favOrder    = {}
-local userScripts = {}
-local rgbUI
-local themeButtons
-applyTierBadge = function() end
-
--- =========================================================
---  FAVES TAB
--- =========================================================
 
 local favesList = Instance.new("ScrollingFrame")
 favesList.Size = UDim2.new(1, -40, 1, -8); favesList.Position = UDim2.new(0, 20, 0, 4)
@@ -918,10 +859,6 @@ local function toggleFavorite(key)
     renderFaves()
 end
 
--- =========================================================
---  STATE MACHINE
--- =========================================================
-
 local S = { READY = "READY", LOADING = "LOADING", LOADED = "LOADED", ERROR = "ERROR" }
 
 local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHint, errorHint)
@@ -933,6 +870,7 @@ local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHin
     end
 
     local function setColors(c1, c2, h1, h2, strokeT)
+        if ui.button then ui.button.BackgroundColor3 = c1 end
         ui.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, c1), ColorSequenceKeypoint.new(1, c2) })
         ui.ovGrad.Color  = ColorSequence.new({ ColorSequenceKeypoint.new(0, h1), ColorSequenceKeypoint.new(1, h2) })
         tween(ui.btnStroke, { Transparency = strokeT or 0.3 }, 0.4)
@@ -991,12 +929,11 @@ local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHin
         end,
     }
     setState(S.READY)
+    onTheme(function()
+        pcall(function() sm.refresh() end)
+    end)
     return sm
 end
-
--- =========================================================
---  GRID TILE
--- =========================================================
 
 local GRID = { cols = 3, pad = 20, gap = 12, tileW = 213, tileH = 110, rowGap = 12 }
 
@@ -1150,10 +1087,6 @@ local function makeGridTile(parent, index, iconText, labelText, hintText, unique
     return result
 end
 
--- =========================================================
---  INJECT
--- =========================================================
-
 local function doInject(sm, url, labelName)
     local st = sm.get()
     if st == S.LOADING or st == S.LOADED then return end
@@ -1173,10 +1106,6 @@ local function doInject(sm, url, labelName)
         end
     end)
 end
-
--- =========================================================
---  PAGE: MAIN
--- =========================================================
 
 do
     local uiIY   = makeGridTile(pages.MAIN, 1, "$", "INFINITE YIELD", "> click to inject", "iy")
@@ -1199,10 +1128,6 @@ do
     uiSkin.button.MouseButton1Click:Connect(builtin.skin.run)
 end
 
--- =========================================================
---  PAGE: DOORS
--- =========================================================
-
 do
     local uiAbysall = makeGridTile(pages.DOORS, 1, "◈", "ABYSALL HUB", "> click to inject", "abysall")
     local smAbysall = makeStateMachine(uiAbysall, "ABYSALL HUB", "> click to inject", "> loading Abysall...", "> active", "> load failed")
@@ -1224,10 +1149,6 @@ do
     uiMSDoors.button.MouseButton1Click:Connect(builtin.msdoors.run)
 end
 
--- =========================================================
---  PAGE: TOOLS
--- =========================================================
-
 do
     local uiDex = makeGridTile(pages.TOOLS, 1, "◇", "DEX", "> click to inject", "dex")
     local smDex = makeStateMachine(uiDex, "DEX", "> click to inject", "> loading Dex...", "> active", "> load failed")
@@ -1248,10 +1169,6 @@ do
     uiHydro.button.MouseButton1Click:Connect(builtin.hydro.run)
     uiCMDX.button.MouseButton1Click:Connect(builtin.cmdx.run)
 end
-
--- =========================================================
---  PAGE: UTILITY
--- =========================================================
 
 do
     local uiRejoin = makeGridTile(pages.UTILITY, 1, "↻", "REJOIN", "> same server", "rejoin")
@@ -1308,35 +1225,60 @@ do
     local antiAfkOn = false
     local antiAfkConn
     local uiAntiAfk = makeGridTile(pages.UTILITY, 3, "☯", "ANTI-AFK", "> toggle", "antiafk")
+
+    local function applyAntiAfkVisual()
+        if antiAfkOn then
+            uiAntiAfk.btnText.Text = "ANTI-AFK: ON"
+            uiAntiAfk.btnGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, T.accent),
+                ColorSequenceKeypoint.new(1, T.accentDeep),
+            })
+            uiAntiAfk.ovGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, T.accentHi),
+                ColorSequenceKeypoint.new(1, T.emberHi),
+            })
+            uiAntiAfk.hint.Text = "> running"
+            uiAntiAfk.hint.TextColor3 = T.accentHi
+        else
+            uiAntiAfk.btnText.Text = "ANTI-AFK"
+            uiAntiAfk.btnGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, BTN.base1),
+                ColorSequenceKeypoint.new(1, BTN.base2),
+            })
+            uiAntiAfk.ovGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, BTN.hov1),
+                ColorSequenceKeypoint.new(1, BTN.hov2),
+            })
+            uiAntiAfk.hint.Text = "> toggle"
+            uiAntiAfk.hint.TextColor3 = T.text2
+        end
+    end
+
     local function runAntiAfk()
         antiAfkOn = not antiAfkOn
         if antiAfkOn then
-            uiAntiAfk.btnText.Text = "ANTI-AFK: ON"
-            uiAntiAfk.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, T.ok), ColorSequenceKeypoint.new(1, Color3.fromRGB(20,80,45)) })
-            uiAntiAfk.ovGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, T.okHi), ColorSequenceKeypoint.new(1, T.ok) })
-            uiAntiAfk.hint.Text = "> running"; uiAntiAfk.hint.TextColor3 = T.ok
             antiAfkConn = LP.Idled:Connect(function()
                 pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new()) end)
             end)
         else
-            uiAntiAfk.btnText.Text = "ANTI-AFK"
-            uiAntiAfk.btnGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, BTN.base1), ColorSequenceKeypoint.new(1, BTN.base2) })
-            uiAntiAfk.ovGrad.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, BTN.hov1), ColorSequenceKeypoint.new(1, BTN.hov2) })
-            uiAntiAfk.hint.Text = "> toggle"; uiAntiAfk.hint.TextColor3 = T.text2
             if antiAfkConn then antiAfkConn:Disconnect(); antiAfkConn = nil end
         end
+        applyAntiAfkVisual()
     end
+
+    onTheme(function() applyAntiAfkVisual() end)
+
     builtin.antiafk = { ui = uiAntiAfk, sm = nil, label = "ANTI-AFK", icon = "☯", run = runAntiAfk }
     uiAntiAfk.button.MouseButton1Click:Connect(runAntiAfk)
 end
 
--- =========================================================
---  PAGE: CUSTOM + HISTORY
--- =========================================================
-
 local history = {}
 local urlInput
 local statusLbl
+local saveHistory
+local renderHistory
+local loadHistory
+local pushHistory
 
 do
     local customWrap = Instance.new("Frame")
@@ -1385,6 +1327,7 @@ do
     stroke(loadBtn, Color3.new(1,1,1), 1, 0.75)
 
     onTheme(function()
+        loadBtn.BackgroundColor3 = T.accent
         loadBtnGrad.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, T.accent),
             ColorSequenceKeypoint.new(1, T.accentDeep),
@@ -1549,10 +1492,31 @@ do
     end)
 end
 
--- =========================================================
---  PAGE: USER — custom scripts added by user
--- =========================================================
--- Всё в do-блоке для экономии local-регистров
+function saveUserScripts()
+    local out = {}
+    for _, e in ipairs(userScripts) do
+        table.insert(out, { name = e.name, icon = e.icon, url = e.url })
+    end
+    writeJSON(USER_FILE, { scripts = out })
+end
+
+local renderUserScripts
+
+function loadUserScripts()
+    local data = readJSON(USER_FILE, nil)
+    if type(data) == "table" and type(data.scripts) == "table" then
+        for _, e in ipairs(data.scripts) do
+            if type(e) == "table" and type(e.url) == "string" then
+                table.insert(userScripts, {
+                    name = tostring(e.name or "CUSTOM"),
+                    icon = tostring(e.icon or "★"),
+                    url = tostring(e.url),
+                })
+            end
+        end
+    end
+    renderUserScripts()
+end
 
 do
     local userPage = pages.USER
@@ -1611,7 +1575,6 @@ do
     userEmpty.ZIndex = 9
     userEmpty.Parent = userScroll
 
-    -- drag state
     local userDrag = {
         active = false, idx = nil, slot = nil,
         startMouse = Vector2.new(0, 0), startX = 0, startY = 0,
@@ -1645,16 +1608,6 @@ do
             end
         end)
     end
-
-    function saveUserScripts()
-        local out = {}
-        for _, e in ipairs(userScripts) do
-            table.insert(out, { name = e.name, icon = e.icon, url = e.url })
-        end
-        writeJSON(USER_FILE, { scripts = out })
-    end
-
-    local renderUserScripts
 
     local function deleteUserScript(idx)
         local entry = userScripts[idx]
@@ -1791,7 +1744,7 @@ do
             del.MouseLeave:Connect(function() tween(del, { BackgroundTransparency = 0.25, TextColor3 = T.text2 }, 0.15) end)
             del.MouseButton1Click:Connect(function() deleteUserScript(i) end)
 
-            local sm = makeStateMachine({ btnGrad = btnGrad, ovGrad = ovGrad, btnStroke = btnStroke,
+            local sm = makeStateMachine({ button = btn, btnGrad = btnGrad, ovGrad = ovGrad, btnStroke = btnStroke,
                 btnText = nameLbl, hint = hintLbl },
                 entry.name or "CUSTOM", "> click to inject", "> loading...", "> active", "> failed")
 
@@ -1894,24 +1847,6 @@ do
         if not userDrag.active then return end
         finishUserDrag(true)
     end)
-
-    function loadUserScripts()
-        local data = readJSON(USER_FILE, nil)
-        if type(data) == "table" and type(data.scripts) == "table" then
-            for _, e in ipairs(data.scripts) do
-                if type(e) == "table" and type(e.url) == "string" then
-                    table.insert(userScripts, {
-                        name = tostring(e.name or "CUSTOM"),
-                        icon = tostring(e.icon or "★"),
-                        url = tostring(e.url),
-                    })
-                end
-            end
-        end
-        renderUserScripts()
-    end
-
-    -- ADD SCRIPT MODAL (тоже в этом блоке, чтобы не плодить регистры)
 
     local addModal = Instance.new("Frame")
     addModal.Size = UDim2.new(1, 0, 1, 0)
@@ -2074,11 +2009,7 @@ do
             pcall(function() nameInput:CaptureFocus() end)
         end)
     end)
-end  -- конец USER + MODAL блока
-
--- =========================================================
---  PAGE: SETTINGS
--- =========================================================
+end
 
 do
     local setupWrap = Instance.new("ScrollingFrame")
@@ -2088,7 +2019,7 @@ do
     setupWrap.BorderSizePixel = 0
     setupWrap.ScrollBarThickness = 4
     setupWrap.ScrollBarImageColor3 = T.accent
-    setupWrap.CanvasSize = UDim2.new(0, 0, 0, 540)
+    setupWrap.CanvasSize = UDim2.new(0, 0, 0, 960)
     setupWrap.ZIndex = 8
     setupWrap.Parent = pages.SETUP
 
@@ -2188,7 +2119,6 @@ do
         themeButtons[key] = { btn = b, check = check, stroke = bStroke, swatch = swatch }
     end
 
-    -- CUSTOM RGB SECTION
     local rgbTitle = Instance.new("TextLabel")
     rgbTitle.Size = UDim2.new(1, 0, 0, 18)
     rgbTitle.Position = UDim2.new(0, 0, 0, 168)
@@ -2250,6 +2180,7 @@ do
     applyCheck.Parent = applyBtn
 
     onTheme(function()
+        applyBtn.BackgroundColor3 = T.accent
         applyGrad.Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, T.accentHi),
             ColorSequenceKeypoint.new(1, T.accentDeep),
@@ -2414,7 +2345,6 @@ do
         applyTheme("custom")
     end)
 
-    -- DATA MANAGEMENT
     local dataTitle = Instance.new("TextLabel")
     dataTitle.Size = UDim2.new(1, 0, 0, 18)
     dataTitle.Position = UDim2.new(0, 0, 0, 310)
@@ -2442,10 +2372,12 @@ do
         b.ZIndex = 9
         b.Parent = setupWrap
         corner(b, 8)
-        local st = stroke(b, T.danger, 1, 0.4)
+        local st = stroke(b, T.accent, 1, 0.4)
+
+        onTheme(function() st.Color = T.accent end)
 
         b.MouseEnter:Connect(function()
-            tween(b, { BackgroundTransparency = 0.05, TextColor3 = T.danger }, 0.15)
+            tween(b, { BackgroundTransparency = 0.05, TextColor3 = T.accentHi }, 0.15)
             tween(st, { Transparency = 0.1 }, 0.15)
         end)
         b.MouseLeave:Connect(function()
@@ -2493,13 +2425,535 @@ do
         applyTheme("red")
     end)
 
+    local cfgTitle = Instance.new("TextLabel")
+    cfgTitle.Size = UDim2.new(1, 0, 0, 18)
+    cfgTitle.Position = UDim2.new(0, 0, 0, 428)
+    cfgTitle.BackgroundTransparency = 1
+    cfgTitle.Text = "CONFIG (EXPORT / IMPORT)"
+    cfgTitle.TextColor3 = T.text2
+    cfgTitle.Font = FONT_DISPLAY
+    cfgTitle.TextSize = 11
+    cfgTitle.TextXAlignment = Enum.TextXAlignment.Left
+    cfgTitle.ZIndex = 9
+    cfgTitle.Parent = setupWrap
+
+    local cfgBox = Instance.new("Frame")
+    cfgBox.Size = UDim2.new(1, 0, 0, 90)
+    cfgBox.Position = UDim2.new(0, 0, 0, 452)
+    cfgBox.BackgroundColor3 = T.surface2
+    cfgBox.BackgroundTransparency = 0.3
+    cfgBox.BorderSizePixel = 0
+    cfgBox.ZIndex = 8
+    cfgBox.Parent = setupWrap
+    corner(cfgBox, 8)
+    local cfgBoxStroke = stroke(cfgBox, T.accent, 1, 0.6)
+    onTheme(function() cfgBoxStroke.Color = T.accent end)
+
+    local cfgInput = Instance.new("TextBox")
+    cfgInput.Size = UDim2.new(1, -16, 1, -16)
+    cfgInput.Position = UDim2.new(0, 8, 0, 8)
+    cfgInput.BackgroundTransparency = 1
+    cfgInput.Text = ""
+    cfgInput.PlaceholderText = "> paste CFG JSON here, then press IMPORT"
+    cfgInput.PlaceholderColor3 = T.text3
+    cfgInput.TextColor3 = T.text0
+    cfgInput.Font = FONT_DISPLAY
+    cfgInput.TextSize = 10
+    cfgInput.TextXAlignment = Enum.TextXAlignment.Left
+    cfgInput.TextYAlignment = Enum.TextYAlignment.Top
+    cfgInput.TextWrapped = true
+    cfgInput.MultiLine = true
+    cfgInput.ClearTextOnFocus = false
+    cfgInput.ZIndex = 9
+    cfgInput.Parent = cfgBox
+
+    local cfgStatus = Instance.new("TextLabel")
+    cfgStatus.Size = UDim2.new(1, 0, 0, 14)
+    cfgStatus.Position = UDim2.new(0, 0, 0, 550)
+    cfgStatus.BackgroundTransparency = 1
+    cfgStatus.Text = ""
+    cfgStatus.TextColor3 = T.text2
+    cfgStatus.Font = FONT_DISPLAY
+    cfgStatus.TextSize = 10
+    cfgStatus.TextXAlignment = Enum.TextXAlignment.Left
+    cfgStatus.ZIndex = 9
+    cfgStatus.Parent = setupWrap
+
+    local function makeCfgBtn(xPos, yPos, w, text, onClick)
+        local b = Instance.new("TextButton")
+        b.Size = UDim2.new(0, w, 0, 34)
+        b.Position = UDim2.new(0, xPos, 0, yPos)
+        b.BackgroundColor3 = T.accent
+        b.BackgroundTransparency = 0.15
+        b.BorderSizePixel = 0
+        b.Text = text
+        b.TextColor3 = Color3.new(1,1,1)
+        b.Font = FONT_DISPLAY
+        b.TextSize = 12
+        b.AutoButtonColor = false
+        b.ZIndex = 9
+        b.Parent = setupWrap
+        corner(b, 8)
+        local st = stroke(b, T.accentHi, 1, 0.5)
+        onTheme(function()
+            b.BackgroundColor3 = T.accent
+            st.Color = T.accentHi
+        end)
+        b.MouseEnter:Connect(function()
+            tween(b, { BackgroundTransparency = 0 }, 0.15)
+            tween(st, { Transparency = 0.1 }, 0.15)
+        end)
+        b.MouseLeave:Connect(function()
+            tween(b, { BackgroundTransparency = 0.15 }, 0.15)
+            tween(st, { Transparency = 0.5 }, 0.15)
+        end)
+        b.MouseButton1Click:Connect(onClick)
+        return b
+    end
+
+    makeCfgBtn(0, 572, 210, "EXPORT CFG (COPY)", function()
+        local cfg = {
+            version   = "8.5",
+            theme     = currentTheme,
+            customRGB = { r = customRGB.r, g = customRGB.g, b = customRGB.b },
+            favorites = favOrder,
+            userScripts = {},
+            settings  = { autoload = settings.autoload, autoQueue = settings.autoQueue, hubUrl = settings.hubUrl },
+        }
+        for _, e in ipairs(userScripts) do
+            table.insert(cfg.userScripts, { name = e.name, icon = e.icon, url = e.url })
+        end
+
+        local ok, encoded = pcall(function() return HttpService:JSONEncode(cfg) end)
+        if not ok then
+            cfgStatus.Text = "> export failed"
+            cfgStatus.TextColor3 = T.danger
+            return
+        end
+
+        cfgInput.Text = encoded
+
+        local copied = false
+        if type(setclipboard) == "function" then
+            local okC = pcall(setclipboard, encoded)
+            copied = okC
+        end
+
+        cfgStatus.Text = copied
+            and ("> cfg copied to clipboard (" .. #encoded .. " bytes)")
+            or ("> cfg ready in box — clipboard unavailable")
+        cfgStatus.TextColor3 = T.ok
+    end)
+
+    makeCfgBtn(220, 572, 210, "IMPORT CFG (PASTE)", function()
+        local txt = cfgInput.Text
+        if txt == "" then
+            cfgStatus.Text = "> empty box"
+            cfgStatus.TextColor3 = T.danger
+            return
+        end
+
+        local ok, data = pcall(function() return HttpService:JSONDecode(txt) end)
+        if not ok or type(data) ~= "table" then
+            cfgStatus.Text = "> invalid CFG (bad JSON)"
+            cfgStatus.TextColor3 = T.danger
+            return
+        end
+
+        if type(data.theme) == "string" then
+            if data.theme == "custom" or THEMES[data.theme] then
+                currentTheme = data.theme
+            end
+        end
+
+        if type(data.customRGB) == "table" then
+            customRGB.r = tonumber(data.customRGB.r) or customRGB.r
+            customRGB.g = tonumber(data.customRGB.g) or customRGB.g
+            customRGB.b = tonumber(data.customRGB.b) or customRGB.b
+            THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
+        end
+
+        if type(data.favorites) == "table" then
+            favOn = {}
+            favOrder = {}
+            for _, key in ipairs(data.favorites) do
+                if type(key) == "string" and builtin[key] then
+                    favOn[key] = true
+                    table.insert(favOrder, key)
+                    builtin[key].ui.star.Text = "★"
+                    builtin[key].ui.star.TextColor3 = T.warn
+                end
+            end
+            saveFavorites()
+            renderFaves()
+        end
+
+        if type(data.userScripts) == "table" then
+            for _, e in ipairs(userScripts) do
+                if e.ui and e.ui.slot then e.ui.slot:Destroy() end
+            end
+            userScripts = {}
+            for _, e in ipairs(data.userScripts) do
+                if type(e) == "table" and type(e.url) == "string" then
+                    table.insert(userScripts, {
+                        name = tostring(e.name or "CUSTOM"),
+                        icon = tostring(e.icon or "★"),
+                        url  = tostring(e.url),
+                    })
+                end
+            end
+            saveUserScripts()
+            renderUserScripts()
+        end
+
+        if type(data.settings) == "table" then
+            if type(data.settings.autoload) == "table" then
+                settings.autoload = data.settings.autoload
+            end
+            if type(data.settings.autoQueue) == "boolean" then
+                settings.autoQueue = data.settings.autoQueue
+            end
+            if type(data.settings.hubUrl) == "string" then
+                settings.hubUrl = data.settings.hubUrl
+            end
+        end
+
+        applyTheme(currentTheme)
+        if rgbUI and rgbUI.syncFromState then rgbUI.syncFromState() end
+        for k, btn in pairs(themeButtons) do
+            btn.check.Text = (k == currentTheme) and "✓" or ""
+        end
+        if autoStatusRef and autoStatusRef.refresh then autoStatusRef.refresh() end
+
+        cfgStatus.Text = "> cfg loaded ✓"
+        cfgStatus.TextColor3 = T.ok
+    end)
+
+    local autoTitle = Instance.new("TextLabel")
+    autoTitle.Size = UDim2.new(1, 0, 0, 18)
+    autoTitle.Position = UDim2.new(0, 0, 0, 636)
+    autoTitle.BackgroundTransparency = 1
+    autoTitle.Text = "AUTOLOAD"
+    autoTitle.TextColor3 = T.text2
+    autoTitle.Font = FONT_DISPLAY
+    autoTitle.TextSize = 11
+    autoTitle.TextXAlignment = Enum.TextXAlignment.Left
+    autoTitle.ZIndex = 9
+    autoTitle.Parent = setupWrap
+
+    local autoStatus = Instance.new("TextLabel")
+    autoStatus.Size = UDim2.new(1, 0, 0, 20)
+    autoStatus.Position = UDim2.new(0, 0, 0, 658)
+    autoStatus.BackgroundTransparency = 1
+    autoStatus.Text = "> current: none"
+    autoStatus.TextColor3 = T.text0
+    autoStatus.Font = FONT_DISPLAY
+    autoStatus.TextSize = 12
+    autoStatus.TextXAlignment = Enum.TextXAlignment.Left
+    autoStatus.ZIndex = 9
+    autoStatus.Parent = setupWrap
+
+    local function updateAutoStatus()
+        if settings.autoload then
+            autoStatus.Text = "> current: " .. tostring(settings.autoload.name or "?")
+            autoStatus.TextColor3 = T.ok
+        else
+            autoStatus.Text = "> current: none"
+            autoStatus.TextColor3 = T.text2
+        end
+    end
+    updateAutoStatus()
+    autoStatusRef = { refresh = updateAutoStatus }
+
+    local pickerModal = Instance.new("Frame")
+    pickerModal.Name = "AutoPicker"
+    pickerModal.Size = UDim2.new(1, 0, 1, 0)
+    pickerModal.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    pickerModal.BackgroundTransparency = 0.5
+    pickerModal.BorderSizePixel = 0
+    pickerModal.Visible = false
+    pickerModal.ZIndex = 70
+    pickerModal.Parent = main
+
+    local pickerBox = Instance.new("Frame")
+    pickerBox.AnchorPoint = Vector2.new(0.5, 0.5)
+    pickerBox.Position = UDim2.new(0.5, 0, 0.5, 0)
+    pickerBox.Size = UDim2.new(0, 460, 0, 420)
+    pickerBox.BackgroundColor3 = T.surface1
+    pickerBox.BorderSizePixel = 0
+    pickerBox.ZIndex = 71
+    pickerBox.Parent = pickerModal
+    corner(pickerBox, 14)
+    grad(pickerBox, { T.surface1, T.surface0 }, 135)
+    local pickerStroke = stroke(pickerBox, T.accent, 1.5, 0.3)
+    onTheme(function() pickerStroke.Color = T.accent end)
+
+    local pickerTitle = Instance.new("TextLabel")
+    pickerTitle.Size = UDim2.new(1, 0, 0, 28)
+    pickerTitle.Position = UDim2.new(0, 0, 0, 14)
+    pickerTitle.BackgroundTransparency = 1
+    pickerTitle.Text = "SELECT AUTOLOAD SCRIPT"
+    pickerTitle.TextColor3 = T.accentHi
+    pickerTitle.Font = FONT_DISPLAY
+    pickerTitle.TextSize = 16
+    pickerTitle.ZIndex = 72
+    pickerTitle.Parent = pickerBox
+
+    local pickerScroll = Instance.new("ScrollingFrame")
+    pickerScroll.Size = UDim2.new(1, -30, 1, -110)
+    pickerScroll.Position = UDim2.new(0, 15, 0, 50)
+    pickerScroll.BackgroundColor3 = T.surface0
+    pickerScroll.BackgroundTransparency = 0.4
+    pickerScroll.BorderSizePixel = 0
+    pickerScroll.ScrollBarThickness = 4
+    pickerScroll.ScrollBarImageColor3 = T.accent
+    pickerScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    pickerScroll.ZIndex = 72
+    pickerScroll.Parent = pickerBox
+    corner(pickerScroll, 8)
+
+    local function rebuildPickerList()
+        for _, c in ipairs(pickerScroll:GetChildren()) do c:Destroy() end
+
+        local y = 6
+        local function addRow(label, icon, entry)
+            local row = Instance.new("TextButton")
+            row.Size = UDim2.new(1, -10, 0, 34)
+            row.Position = UDim2.new(0, 5, 0, y)
+            row.BackgroundColor3 = T.surface2
+            row.BackgroundTransparency = 0.15
+            row.BorderSizePixel = 0
+            row.Text = ""
+            row.AutoButtonColor = false
+            row.ZIndex = 73
+            row.Parent = pickerScroll
+            corner(row, 6)
+
+            local iLbl = Instance.new("TextLabel")
+            iLbl.Size = UDim2.new(0, 30, 1, 0)
+            iLbl.Position = UDim2.new(0, 6, 0, 0)
+            iLbl.BackgroundTransparency = 1
+            iLbl.Text = icon or "★"
+            iLbl.TextColor3 = T.accentHi
+            iLbl.Font = FONT_DISPLAY
+            iLbl.TextSize = 16
+            iLbl.ZIndex = 74
+            iLbl.Parent = row
+
+            local nLbl = Instance.new("TextLabel")
+            nLbl.Size = UDim2.new(1, -50, 1, 0)
+            nLbl.Position = UDim2.new(0, 40, 0, 0)
+            nLbl.BackgroundTransparency = 1
+            nLbl.Text = label
+            nLbl.TextColor3 = T.text0
+            nLbl.Font = FONT_DISPLAY
+            nLbl.TextSize = 12
+            nLbl.TextXAlignment = Enum.TextXAlignment.Left
+            nLbl.TextTruncate = Enum.TextTruncate.AtEnd
+            nLbl.ZIndex = 74
+            nLbl.Parent = row
+
+            if settings.autoload and settings.autoload.url == entry.url then
+                local chk = Instance.new("TextLabel")
+                chk.Size = UDim2.new(0, 20, 1, 0)
+                chk.Position = UDim2.new(1, -24, 0, 0)
+                chk.BackgroundTransparency = 1
+                chk.Text = "✓"
+                chk.TextColor3 = T.ok
+                chk.Font = FONT_DISPLAY
+                chk.TextSize = 16
+                chk.ZIndex = 74
+                chk.Parent = row
+            end
+
+            row.MouseEnter:Connect(function() tween(row, { BackgroundTransparency = 0 }, 0.15) end)
+            row.MouseLeave:Connect(function() tween(row, { BackgroundTransparency = 0.15 }, 0.15) end)
+            row.MouseButton1Click:Connect(function()
+                settings.autoload = { name = entry.name, icon = entry.icon, url = entry.url }
+                updateAutoStatus()
+                saveSettings()
+                rebuildPickerList()
+            end)
+
+            y = y + 38
+        end
+
+        local header1 = Instance.new("TextLabel")
+        header1.Size = UDim2.new(1, -10, 0, 20)
+        header1.Position = UDim2.new(0, 5, 0, y)
+        header1.BackgroundTransparency = 1
+        header1.Text = "BUILT-IN"
+        header1.TextColor3 = T.text2
+        header1.Font = FONT_DISPLAY
+        header1.TextSize = 10
+        header1.TextXAlignment = Enum.TextXAlignment.Left
+        header1.ZIndex = 73
+        header1.Parent = pickerScroll
+        y = y + 22
+
+        for _, key in ipairs({ "iy", "fly", "skin", "abysall", "cheesy", "msdoors", "dex", "hydro", "cmdx" }) do
+            local entry = builtin[key]
+            if entry then
+                addRow(entry.label, entry.icon, { name = entry.label, icon = entry.icon, url = entry.url })
+            end
+        end
+
+        if #userScripts > 0 then
+            y = y + 8
+            local header2 = Instance.new("TextLabel")
+            header2.Size = UDim2.new(1, -10, 0, 20)
+            header2.Position = UDim2.new(0, 5, 0, y)
+            header2.BackgroundTransparency = 1
+            header2.Text = "USER SCRIPTS"
+            header2.TextColor3 = T.text2
+            header2.Font = FONT_DISPLAY
+            header2.TextSize = 10
+            header2.TextXAlignment = Enum.TextXAlignment.Left
+            header2.ZIndex = 73
+            header2.Parent = pickerScroll
+            y = y + 22
+
+            for _, entry in ipairs(userScripts) do
+                addRow(entry.name, entry.icon, { name = entry.name, icon = entry.icon, url = entry.url })
+            end
+        end
+
+        pickerScroll.CanvasSize = UDim2.new(0, 0, 0, y + 8)
+    end
+
+    local pickerClose = Instance.new("TextButton")
+    pickerClose.Size = UDim2.new(0, 120, 0, 34)
+    pickerClose.Position = UDim2.new(0.5, -60, 1, -46)
+    pickerClose.BackgroundColor3 = T.surface3
+    pickerClose.BackgroundTransparency = 0.3
+    pickerClose.BorderSizePixel = 0
+    pickerClose.Text = "CLOSE"
+    pickerClose.TextColor3 = T.text1
+    pickerClose.Font = FONT_DISPLAY
+    pickerClose.TextSize = 12
+    pickerClose.AutoButtonColor = false
+    pickerClose.ZIndex = 72
+    pickerClose.Parent = pickerBox
+    corner(pickerClose, 8)
+    pickerClose.MouseButton1Click:Connect(function()
+        pickerModal.Visible = false
+    end)
+
+    makeCfgBtn(0, 682, 210, "SELECT AUTOLOAD", function()
+        rebuildPickerList()
+        pickerModal.Visible = true
+    end)
+
+    makeCfgBtn(220, 682, 210, "CLEAR AUTOLOAD", function()
+        settings.autoload = nil
+        updateAutoStatus()
+        saveSettings()
+    end)
+
+    local queueBtn = Instance.new("TextButton")
+    queueBtn.Size = UDim2.new(0, 430, 0, 34)
+    queueBtn.Position = UDim2.new(0, 0, 0, 726)
+    queueBtn.BackgroundColor3 = T.surface2
+    queueBtn.BackgroundTransparency = 0.3
+    queueBtn.BorderSizePixel = 0
+    queueBtn.Text = "AUTO-QUEUE HUB ON TELEPORT: OFF"
+    queueBtn.TextColor3 = T.text1
+    queueBtn.Font = FONT_DISPLAY
+    queueBtn.TextSize = 12
+    queueBtn.AutoButtonColor = false
+    queueBtn.ZIndex = 9
+    queueBtn.Parent = setupWrap
+    corner(queueBtn, 8)
+    local queueStroke = stroke(queueBtn, T.accent, 1, 0.5)
+
+    local function refreshQueueBtn()
+        if settings.autoQueue then
+            queueBtn.Text = "AUTO-QUEUE HUB ON TELEPORT: ON"
+            queueBtn.BackgroundColor3 = T.accent
+            queueBtn.TextColor3 = Color3.new(1,1,1)
+        else
+            queueBtn.Text = "AUTO-QUEUE HUB ON TELEPORT: OFF"
+            queueBtn.BackgroundColor3 = T.surface2
+            queueBtn.TextColor3 = T.text1
+        end
+    end
+    refreshQueueBtn()
+
+    onTheme(function()
+        queueStroke.Color = T.accent
+        refreshQueueBtn()
+    end)
+
+    queueBtn.MouseButton1Click:Connect(function()
+        settings.autoQueue = not settings.autoQueue
+        refreshQueueBtn()
+        saveSettings()
+    end)
+
+    local hubUrlLbl = Instance.new("TextLabel")
+    hubUrlLbl.Size = UDim2.new(1, 0, 0, 14)
+    hubUrlLbl.Position = UDim2.new(0, 0, 0, 768)
+    hubUrlLbl.BackgroundTransparency = 1
+    hubUrlLbl.Text = "> hub URL (used for auto-queue)"
+    hubUrlLbl.TextColor3 = T.text3
+    hubUrlLbl.Font = FONT_DISPLAY
+    hubUrlLbl.TextSize = 10
+    hubUrlLbl.TextXAlignment = Enum.TextXAlignment.Left
+    hubUrlLbl.ZIndex = 9
+    hubUrlLbl.Parent = setupWrap
+
+    local hubUrlBox = Instance.new("Frame")
+    hubUrlBox.Size = UDim2.new(1, 0, 0, 32)
+    hubUrlBox.Position = UDim2.new(0, 0, 0, 786)
+    hubUrlBox.BackgroundColor3 = T.surface2
+    hubUrlBox.BackgroundTransparency = 0.3
+    hubUrlBox.BorderSizePixel = 0
+    hubUrlBox.ZIndex = 8
+    hubUrlBox.Parent = setupWrap
+    corner(hubUrlBox, 8)
+    local hubUrlStroke = stroke(hubUrlBox, T.accent, 1, 0.6)
+    onTheme(function() hubUrlStroke.Color = T.accent end)
+
+    local hubUrlInput = Instance.new("TextBox")
+    hubUrlInput.Size = UDim2.new(1, -20, 1, 0)
+    hubUrlInput.Position = UDim2.new(0, 10, 0, 0)
+    hubUrlInput.BackgroundTransparency = 1
+    hubUrlInput.Text = settings.hubUrl
+    hubUrlInput.PlaceholderText = "https://raw.githubusercontent.com/.../TEST"
+    hubUrlInput.PlaceholderColor3 = T.text3
+    hubUrlInput.TextColor3 = T.text0
+    hubUrlInput.Font = FONT_DISPLAY
+    hubUrlInput.TextSize = 11
+    hubUrlInput.TextXAlignment = Enum.TextXAlignment.Left
+    hubUrlInput.ClearTextOnFocus = false
+    hubUrlInput.ZIndex = 9
+    hubUrlInput.Parent = hubUrlBox
+
+    hubUrlInput.FocusLost:Connect(function()
+        settings.hubUrl = hubUrlInput.Text
+        saveSettings()
+    end)
+
+    local queueHint = Instance.new("TextLabel")
+    queueHint.Size = UDim2.new(1, 0, 0, 14)
+    queueHint.Position = UDim2.new(0, 0, 0, 824)
+    queueHint.BackgroundTransparency = 1
+    queueHint.Text = "> requires executor support for queue_on_teleport"
+    queueHint.TextColor3 = T.text3
+    queueHint.Font = FONT_DISPLAY
+    queueHint.TextSize = 10
+    queueHint.TextXAlignment = Enum.TextXAlignment.Left
+    queueHint.ZIndex = 9
+    queueHint.Parent = setupWrap
+
     local infoLbl = Instance.new("TextLabel")
     infoLbl.Size = UDim2.new(1, 0, 0, 60)
-    infoLbl.Position = UDim2.new(0, 0, 0, 424)
+    infoLbl.Position = UDim2.new(0, 0, 0, 860)
     infoLbl.BackgroundTransparency = 1
     infoLbl.Text = "> folder: " .. (FS.ok and (FOLDER .. "/") or "not available (executor)")
         .. "\n> saved: favorites.json · history.json · user_scripts.json · settings.json"
-        .. "\n> cache: " .. CACHE_DIR
+        .. "\n> cached: " .. CACHE_DIR
+        .. "\n> chat: [F3] to open/close"
     infoLbl.TextColor3 = T.text3
     infoLbl.Font = FONT_DISPLAY
     infoLbl.TextSize = 10
@@ -2507,11 +2961,7 @@ do
     infoLbl.TextYAlignment = Enum.TextYAlignment.Top
     infoLbl.ZIndex = 9
     infoLbl.Parent = setupWrap
-end  -- конец SETTINGS блока
-
--- =========================================================
---  FOOTER
--- =========================================================
+end
 
 local footer = Instance.new("Frame")
 footer.Size = UDim2.new(1,-40,0,24); footer.Position = UDim2.new(0,20,1,-34)
@@ -2560,14 +3010,10 @@ do
     end)
 end
 
--- =========================================================
---  MINI REOPEN
--- =========================================================
-
 do
     local MINI_DEFAULT_POS = UDim2.new(0.5, -26, 0, 80)
 
-    local miniIcon = Instance.new("Frame")
+    miniIcon = Instance.new("Frame")
     miniIcon.Name = "MiniReopen"
     miniIcon.Size = UDim2.new(0,52,0,52); miniIcon.Position = MINI_DEFAULT_POS
     miniIcon.BackgroundColor3 = T.surface2; miniIcon.BorderSizePixel = 0
@@ -2635,10 +3081,6 @@ do
     end)
 end
 
--- =========================================================
---  PANIC / SCREENSHOT
--- =========================================================
-
 local screenshotMode = false
 local restoreDot
 
@@ -2704,18 +3146,48 @@ function setScreenshot(on)
     end
 end
 
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.F2 then
-        setScreenshot(not screenshotMode)
-    end
-    if input.KeyCode == Enum.KeyCode.X and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
-        panicWipe()
+-- =========================================================
+--  HOOK: ловим сообщения других игроков с префиксом [R4NS0M]
+-- =========================================================
+
+task.spawn(function()
+    local TextChatService = game:GetService("TextChatService")
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channels = TextChatService:WaitForChild("TextChannels", 15)
+        local channel = channels and channels:WaitForChild("RBXGeneral", 15)
+        if channel then
+            channel.MessageReceived:Connect(function(msg)
+                local text = msg.Text
+                if type(text) ~= "string" then return end
+                if text:sub(1, #CHAT_PREFIX) ~= CHAT_PREFIX then return end
+                local sender = msg.TextSource and msg.TextSource.Name or "unknown"
+                local body = text:sub(#CHAT_PREFIX + 2)
+                table.insert(chatMessages, { name = sender, text = body, time = os.time(), local_ = false })
+                while #chatMessages > 60 do table.remove(chatMessages, 1) end
+                if hubChatUI and hubChatUI.refresh then
+                    pcall(hubChatUI.refresh)
+                end
+            end)
+        end
+    else
+        local ev = game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents")
+        if ev and ev:FindFirstChild("OnMessageDoneFiltering") then
+            ev.OnMessageDoneFiltering.OnClientEvent:Connect(function(data)
+                if type(data) ~= "table" or type(data.Message) ~= "string" then return end
+                if data.Message:sub(1, #CHAT_PREFIX) ~= CHAT_PREFIX then return end
+                local body = data.Message:sub(#CHAT_PREFIX + 2)
+                table.insert(chatMessages, { name = data.FromSpeaker or "unknown", text = body, time = os.time(), local_ = false })
+                while #chatMessages > 60 do table.remove(chatMessages, 1) end
+                if hubChatUI and hubChatUI.refresh then
+                    pcall(hubChatUI.refresh)
+                end
+            end)
+        end
     end
 end)
 
 -- =========================================================
---  TAB SWITCHING + SEARCH
+--  TAB SWITCHING + SEARCH (across all tabs)
 -- =========================================================
 
 local activeTab = "MAIN"
@@ -2724,21 +3196,235 @@ local function slidePill(idx)
     tween(pill, { Position = UDim2.new(0, (idx-1)*TAB_W + 4, 0, 4) }, 0.35, Enum.EasingStyle.Quart)
 end
 
-local function applySearchFilter()
-    local q = string.lower(searchInput.Text)
-    for _, entry in ipairs(registry) do
-        if entry.ui.slot.Parent == pages[activeTab] then
-            if q == "" then
-                entry.ui.slot.Visible = true
-            else
-                entry.ui.slot.Visible = string.find(string.lower(entry.label), q, 1, true) ~= nil
+local searchPage = Instance.new("Frame")
+searchPage.Name = "SearchResults"
+searchPage.Size = UDim2.new(1,0,1,0)
+searchPage.BackgroundTransparency = 1
+searchPage.Visible = false
+searchPage.ZIndex = 9
+searchPage.Parent = body
+
+local searchResultsTitle = Instance.new("TextLabel")
+searchResultsTitle.Size = UDim2.new(1, -40, 0, 18)
+searchResultsTitle.Position = UDim2.new(0, 20, 0, 4)
+searchResultsTitle.BackgroundTransparency = 1
+searchResultsTitle.Text = "SEARCH RESULTS"
+searchResultsTitle.TextColor3 = T.text2
+searchResultsTitle.Font = FONT_DISPLAY
+searchResultsTitle.TextSize = 11
+searchResultsTitle.TextXAlignment = Enum.TextXAlignment.Left
+searchResultsTitle.ZIndex = 10
+searchResultsTitle.Parent = searchPage
+
+local searchResultsCount = Instance.new("TextLabel")
+searchResultsCount.Size = UDim2.new(1, -40, 0, 18)
+searchResultsCount.Position = UDim2.new(0, 20, 0, 4)
+searchResultsCount.BackgroundTransparency = 1
+searchResultsCount.Text = ""
+searchResultsCount.TextColor3 = T.accentHi
+searchResultsCount.Font = FONT_DISPLAY
+searchResultsCount.TextSize = 11
+searchResultsCount.TextXAlignment = Enum.TextXAlignment.Right
+searchResultsCount.ZIndex = 10
+searchResultsCount.Parent = searchPage
+
+onTheme(function() searchResultsCount.TextColor3 = T.accentHi end)
+
+local searchScroll = Instance.new("ScrollingFrame")
+searchScroll.Size = UDim2.new(1, -40, 1, -30)
+searchScroll.Position = UDim2.new(0, 20, 0, 26)
+searchScroll.BackgroundTransparency = 1
+searchScroll.BorderSizePixel = 0
+searchScroll.ScrollBarThickness = 4
+searchScroll.ScrollBarImageColor3 = T.accent
+searchScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+searchScroll.ZIndex = 9
+searchScroll.Parent = searchPage
+
+onTheme(function() searchScroll.ScrollBarImageColor3 = T.accent end)
+
+local searchEmpty = Instance.new("TextLabel")
+searchEmpty.Size = UDim2.new(1, 0, 0, 40)
+searchEmpty.Position = UDim2.new(0, 0, 0, 20)
+searchEmpty.BackgroundTransparency = 1
+searchEmpty.Text = "> no matches"
+searchEmpty.TextColor3 = T.text3
+searchEmpty.Font = FONT_DISPLAY
+searchEmpty.TextSize = 12
+searchEmpty.ZIndex = 10
+searchEmpty.Parent = searchScroll
+
+local function clearSearchResults()
+    for _, c in ipairs(searchScroll:GetChildren()) do
+        if c ~= searchEmpty then c:Destroy() end
+    end
+end
+
+local function buildResultRow(m, y)
+    local row = Instance.new("TextButton")
+    row.Size = UDim2.new(1, -8, 0, 42)
+    row.Position = UDim2.new(0, 4, 0, y)
+    row.BackgroundColor3 = T.surface3
+    row.BackgroundTransparency = 0.15
+    row.BorderSizePixel = 0
+    row.Text = ""
+    row.AutoButtonColor = false
+    row.ZIndex = 10
+    row.Parent = searchScroll
+    corner(row, 8)
+    local rStroke = stroke(row, T.accent, 1, 0.7)
+    onTheme(function() rStroke.Color = T.accent end)
+
+    local iLbl = Instance.new("TextLabel")
+    iLbl.Size = UDim2.new(0, 34, 1, 0)
+    iLbl.Position = UDim2.new(0, 8, 0, 0)
+    iLbl.BackgroundTransparency = 1
+    iLbl.Text = m.icon or "★"
+    iLbl.TextColor3 = T.accentHi
+    iLbl.Font = FONT_DISPLAY
+    iLbl.TextSize = 18
+    iLbl.ZIndex = 11
+    iLbl.Parent = row
+    onTheme(function() iLbl.TextColor3 = T.accentHi end)
+
+    local nLbl = Instance.new("TextLabel")
+    nLbl.Size = UDim2.new(1, -180, 1, 0)
+    nLbl.Position = UDim2.new(0, 46, 0, 0)
+    nLbl.BackgroundTransparency = 1
+    nLbl.Text = m.label
+    nLbl.TextColor3 = T.text0
+    nLbl.Font = FONT_DISPLAY
+    nLbl.TextSize = 13
+    nLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nLbl.TextTruncate = Enum.TextTruncate.AtEnd
+    nLbl.ZIndex = 11
+    nLbl.Parent = row
+
+    local tag = Instance.new("TextLabel")
+    tag.Size = UDim2.new(0, 80, 1, 0)
+    tag.Position = UDim2.new(1, -132, 0, 0)
+    tag.BackgroundTransparency = 1
+    tag.Text = m.tag
+    tag.TextColor3 = T.text2
+    tag.Font = FONT_DISPLAY
+    tag.TextSize = 9
+    tag.TextXAlignment = Enum.TextXAlignment.Right
+    tag.ZIndex = 11
+    tag.Parent = row
+
+    local goBtn = Instance.new("TextButton")
+    goBtn.Size = UDim2.new(0, 36, 1, -8)
+    goBtn.Position = UDim2.new(1, -42, 0, 4)
+    goBtn.BackgroundColor3 = T.accent
+    goBtn.BackgroundTransparency = 0.15
+    goBtn.BorderSizePixel = 0
+    goBtn.Text = "▶"
+    goBtn.TextColor3 = T.text0
+    goBtn.Font = FONT_DISPLAY
+    goBtn.TextSize = 13
+    goBtn.AutoButtonColor = false
+    goBtn.ZIndex = 12
+    goBtn.Parent = row
+    corner(goBtn, 6)
+    onTheme(function() goBtn.BackgroundColor3 = T.accent end)
+
+    local function activate()
+        if m.run then
+            task.spawn(m.run)
+        end
+    end
+
+    goBtn.MouseEnter:Connect(function() tween(goBtn, { BackgroundTransparency = 0 }, 0.15) end)
+    goBtn.MouseLeave:Connect(function() tween(goBtn, { BackgroundTransparency = 0.15 }, 0.15) end)
+    goBtn.MouseButton1Click:Connect(activate)
+
+    row.MouseEnter:Connect(function() tween(row, { BackgroundTransparency = 0 }, 0.15) end)
+    row.MouseLeave:Connect(function() tween(row, { BackgroundTransparency = 0.15 }, 0.15) end)
+    row.MouseButton1Click:Connect(activate)
+end
+
+local function renderSearchResults(q)
+    clearSearchResults()
+
+    local matches = {}
+    local seen = {}
+
+    for _, entry in pairs(builtin) do
+        if entry and entry.label and entry.run then
+            if string.find(string.lower(entry.label), q, 1, true) then
+                if not seen[entry.label] then
+                    seen[entry.label] = true
+                    table.insert(matches, {
+                        label = entry.label,
+                        icon  = entry.icon or "★",
+                        run   = entry.run,
+                        tag   = "BUILT-IN",
+                    })
+                end
             end
         end
+    end
+
+    for _, entry in ipairs(userScripts) do
+        local nm = entry.name or "CUSTOM"
+        if string.find(string.lower(nm), q, 1, true) then
+            table.insert(matches, {
+                label = nm,
+                icon  = entry.icon or "★",
+                run   = function()
+                    if entry.sm then
+                        doInject(entry.sm, entry.url, entry.name or "Custom")
+                    end
+                end,
+                tag   = "USER",
+            })
+        end
+    end
+
+    searchResultsCount.Text = #matches .. " match" .. (#matches == 1 and "" or "es")
+
+    if #matches == 0 then
+        searchEmpty.Visible = true
+        searchScroll.CanvasSize = UDim2.new(0, 0, 0, 60)
+        return
+    end
+    searchEmpty.Visible = false
+
+    local y = 4
+    for _, m in ipairs(matches) do
+        buildResultRow(m, y)
+        y = y + 46
+    end
+    searchScroll.CanvasSize = UDim2.new(0, 0, 0, y + 4)
+end
+
+local function applySearchFilter()
+    local q = string.lower(searchInput.Text)
+
+    if q == "" then
+        searchPage.Visible = false
+        for _, tab in ipairs(TABS) do
+            pages[tab.name].Visible = (tab.name == activeTab)
+        end
+        for _, entry in ipairs(registry) do
+            entry.ui.slot.Visible = (entry.ui.slot.Parent == pages[activeTab])
+        end
+    else
+        searchPage.Visible = true
+        for _, tab in ipairs(TABS) do
+            pages[tab.name].Visible = false
+        end
+        renderSearchResults(q)
     end
 end
 
 local function setTab(name)
-    if activeTab == name then return end
+    if activeTab == name and searchInput.Text == "" then return end
+
+    if searchInput.Text ~= "" then
+        searchInput.Text = ""
+    end
+
     for _, tab in ipairs(TABS) do
         pages[tab.name].Visible = false
         local ic = tabIcons[tab.name]
@@ -2755,6 +3441,7 @@ local function setTab(name)
     end
 
     activeTab = name
+    searchPage.Visible = false
     for _, entry in ipairs(registry) do
         entry.ui.slot.Visible = true
     end
@@ -2768,11 +3455,295 @@ end
 searchInput:GetPropertyChangedSignal("Text"):Connect(applySearchFilter)
 
 -- =========================================================
---  SETTINGS PERSISTENCE
+--  HUB CHAT + OWN NAMETAG
 -- =========================================================
 
-local function saveSettings()
-    writeJSON(SETTINGS_FILE, { theme = currentTheme, customRGB = customRGB })
+local nametagGui = nil
+
+local function attachOwnTag()
+    local char = LP.Character
+    local head = char and char:FindFirstChild("Head")
+    if not head then return end
+    if nametagGui and nametagGui.Parent then return end
+
+    nametagGui = Instance.new("BillboardGui")
+    nametagGui.Name = "R4NS0M_OwnTag"
+    nametagGui.Size = UDim2.new(0, 240, 0, 36)
+    nametagGui.StudsOffset = Vector3.new(0, 2.9, 0)
+    nametagGui.AlwaysOnTop = true
+    nametagGui.MaxDistance = 250
+    nametagGui.Parent = head
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = CHAT_TAG
+    lbl.TextColor3 = T.accentHi
+    lbl.TextStrokeTransparency = 0.25
+    lbl.TextStrokeColor3 = Color3.new(0, 0, 0)
+    lbl.Font = FONT_DISPLAY
+    lbl.TextSize = 16
+    lbl.Parent = nametagGui
+    onTheme(function() lbl.TextColor3 = T.accentHi end)
+end
+
+LP.CharacterAdded:Connect(function()
+    nametagGui = nil
+    task.wait(0.6)
+    attachOwnTag()
+end)
+
+if LP.Character then
+    task.spawn(function()
+        task.wait(0.4)
+        attachOwnTag()
+    end)
+end
+
+local function sendHubChat(text)
+    if not text or text == "" then return false end
+    if #text > 180 then text = text:sub(1, 180) end
+
+    local fullText = CHAT_PREFIX .. " " .. text
+    local TextChatService = game:GetService("TextChatService")
+
+    if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        local channels = TextChatService:FindFirstChild("TextChannels")
+        local channel = channels and channels:FindFirstChild("RBXGeneral")
+        if channel then
+            local ok = pcall(function() channel:SendAsync(fullText) end)
+            if ok then return true end
+        end
+        pcall(function() TextChatService:DisplaySystemMessage(fullText) end)
+        return true
+    else
+        local ok = pcall(function()
+            game:GetService("ReplicatedStorage")
+                .DefaultChatSystemChatEvents
+                .SayMessageRequest
+                :FireServer(fullText, "All")
+        end)
+        return ok
+    end
+end
+
+local function createChatUI()
+    if hubChatUI and hubChatUI.frame and hubChatUI.frame.Parent then
+        return hubChatUI
+    end
+
+    local frame = Instance.new("Frame")
+    frame.Name = "SharedChat"
+    frame.Size = UDim2.new(0, 340, 0, 300)
+    frame.Position = UDim2.new(0, 20, 0, 150)
+    frame.BackgroundColor3 = T.surface1
+    frame.BackgroundTransparency = 0.08
+    frame.BorderSizePixel = 0
+    frame.ZIndex = 300
+    frame.Visible = false
+    frame.Active = true
+    frame.Draggable = true
+    frame.Parent = gui
+    corner(frame, 10)
+    local cStroke = stroke(frame, T.accent, 1.5, 0.3)
+    onTheme(function() cStroke.Color = T.accent end)
+    grad(frame, { T.surface1, T.surface0 }, 135)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, -60, 0, 24)
+    title.Position = UDim2.new(0, 10, 0, 4)
+    title.BackgroundTransparency = 1
+    title.Text = "★ R4NS0M CHAT  ·  [F3]"
+    title.TextColor3 = T.accentHi
+    title.Font = FONT_DISPLAY
+    title.TextSize = 12
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.ZIndex = 301
+    title.Parent = frame
+    onTheme(function() title.TextColor3 = T.accentHi end)
+
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Size = UDim2.new(0, 20, 0, 20)
+    closeBtn.Position = UDim2.new(1, -26, 0, 6)
+    closeBtn.BackgroundColor3 = T.surface3
+    closeBtn.BackgroundTransparency = 0.3
+    closeBtn.BorderSizePixel = 0
+    closeBtn.Text = "×"
+    closeBtn.TextColor3 = T.text1
+    closeBtn.Font = FONT_DISPLAY
+    closeBtn.TextSize = 14
+    closeBtn.AutoButtonColor = false
+    closeBtn.ZIndex = 302
+    closeBtn.Parent = frame
+    corner(closeBtn, 4)
+    closeBtn.MouseButton1Click:Connect(function()
+        frame.Visible = false
+    end)
+
+    local hint = Instance.new("TextLabel")
+    hint.Size = UDim2.new(1, -20, 0, 14)
+    hint.Position = UDim2.new(0, 10, 0, 28)
+    hint.BackgroundTransparency = 1
+    hint.Text = "> messages visible to everyone on this server"
+    hint.TextColor3 = T.text3
+    hint.Font = FONT_DISPLAY
+    hint.TextSize = 9
+    hint.TextXAlignment = Enum.TextXAlignment.Left
+    hint.ZIndex = 301
+    hint.Parent = frame
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -20, 1, -110)
+    scroll.Position = UDim2.new(0, 10, 0, 46)
+    scroll.BackgroundColor3 = T.surface0
+    scroll.BackgroundTransparency = 0.4
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 3
+    scroll.ScrollBarImageColor3 = T.accent
+    scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+    scroll.ZIndex = 300
+    scroll.Parent = frame
+    corner(scroll, 6)
+    onTheme(function() scroll.ScrollBarImageColor3 = T.accent end)
+
+    local emptyLbl = Instance.new("TextLabel")
+    emptyLbl.Name = "EmptyState"
+    emptyLbl.Size = UDim2.new(1, -8, 0, 30)
+    emptyLbl.Position = UDim2.new(0, 4, 0, 6)
+    emptyLbl.BackgroundTransparency = 1
+    emptyLbl.Text = "> no messages yet — say hi"
+    emptyLbl.TextColor3 = T.text3
+    emptyLbl.Font = FONT_DISPLAY
+    emptyLbl.TextSize = 10
+    emptyLbl.TextXAlignment = Enum.TextXAlignment.Left
+    emptyLbl.ZIndex = 301
+    emptyLbl.Parent = scroll
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, -70, 0, 30)
+    input.Position = UDim2.new(0, 10, 1, -38)
+    input.BackgroundColor3 = T.surface2
+    input.BackgroundTransparency = 0.3
+    input.BorderSizePixel = 0
+    input.Text = ""
+    input.PlaceholderText = "> type and press Enter..."
+    input.PlaceholderColor3 = T.text3
+    input.TextColor3 = T.text0
+    input.Font = FONT_DISPLAY
+    input.TextSize = 11
+    input.TextXAlignment = Enum.TextXAlignment.Left
+    input.ClearTextOnFocus = false
+    input.ZIndex = 301
+    input.Parent = frame
+    corner(input, 6)
+    local inputStroke = stroke(input, T.accent, 1, 0.5)
+    onTheme(function() inputStroke.Color = T.accent end)
+
+    local sendBtn = Instance.new("TextButton")
+    sendBtn.Size = UDim2.new(0, 50, 0, 30)
+    sendBtn.Position = UDim2.new(1, -60, 1, -38)
+    sendBtn.BackgroundColor3 = T.accent
+    sendBtn.BorderSizePixel = 0
+    sendBtn.Text = "SEND"
+    sendBtn.TextColor3 = Color3.new(1,1,1)
+    sendBtn.Font = FONT_DISPLAY
+    sendBtn.TextSize = 11
+    sendBtn.AutoButtonColor = false
+    sendBtn.ZIndex = 301
+    sendBtn.Parent = frame
+    corner(sendBtn, 6)
+    onTheme(function() sendBtn.BackgroundColor3 = T.accent end)
+
+    local function doSend()
+        local txt = input.Text
+        if txt == "" then return end
+        local ok = sendHubChat(txt)
+        if ok then
+            table.insert(chatMessages, { name = LP.Name, text = txt, time = os.time(), local_ = true })
+            while #chatMessages > 60 do table.remove(chatMessages, 1) end
+            input.Text = ""
+            if hubChatUI and hubChatUI.refresh then hubChatUI.refresh() end
+        end
+    end
+
+    input.FocusLost:Connect(function(enter)
+        if enter then doSend() end
+    end)
+    sendBtn.MouseButton1Click:Connect(doSend)
+
+    local function refresh()
+        for _, c in ipairs(scroll:GetChildren()) do
+            if c:IsA("TextLabel") and c.Name ~= "EmptyState" then
+                c:Destroy()
+            end
+        end
+        if #chatMessages == 0 then
+            emptyLbl.Visible = true
+            scroll.CanvasSize = UDim2.new(0, 0, 0, 40)
+            return
+        end
+        emptyLbl.Visible = false
+
+        local y = 4
+        for _, m in ipairs(chatMessages) do
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(1, -8, 0, 16)
+            lbl.Position = UDim2.new(0, 4, 0, y)
+            lbl.BackgroundTransparency = 1
+            local prefix = m.local_ and ("> " .. m.name .. ":") or (m.name .. ":")
+            lbl.Text = prefix .. " " .. tostring(m.text)
+            lbl.TextColor3 = m.local_ and T.accentHi or T.text1
+            lbl.Font = FONT_DISPLAY
+            lbl.TextSize = 10
+            lbl.TextXAlignment = Enum.TextXAlignment.Left
+            lbl.TextTruncate = Enum.TextTruncate.AtEnd
+            lbl.ZIndex = 301
+            lbl.Parent = scroll
+            onTheme(function()
+                lbl.TextColor3 = m.local_ and T.accentHi or T.text1
+            end)
+            y = y + 18
+        end
+        scroll.CanvasSize = UDim2.new(0, 0, 0, y + 4)
+        scroll.CanvasPosition = Vector2.new(0, math.max(0, y - scroll.AbsoluteSize.Y + 20))
+    end
+
+    hubChatUI = {
+        frame = frame,
+        input = input,
+        refresh = refresh,
+    }
+    return hubChatUI
+end
+
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if gpe then return end
+    if input.KeyCode == Enum.KeyCode.F2 then
+        setScreenshot(not screenshotMode)
+    end
+    if input.KeyCode == Enum.KeyCode.X and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
+        panicWipe()
+    end
+    if input.KeyCode == CHAT_HOTKEY then
+        local ui = createChatUI()
+        ui.frame.Visible = not ui.frame.Visible
+        if ui.frame.Visible then
+            ui.refresh()
+            task.delay(0.1, function()
+                pcall(function() ui.input:CaptureFocus() end)
+            end)
+        end
+    end
+end)
+
+function saveSettings()
+    writeJSON(SETTINGS_FILE, {
+        theme = currentTheme,
+        customRGB = customRGB,
+        autoload = settings.autoload,
+        autoQueue = settings.autoQueue,
+        hubUrl = settings.hubUrl,
+    })
 end
 
 local function loadSettings()
@@ -2788,13 +3759,22 @@ local function loadSettings()
             customRGB.g = tonumber(data.customRGB.g) or customRGB.g
             customRGB.b = tonumber(data.customRGB.b) or customRGB.b
         end
+        if type(data.autoload) == "table" and type(data.autoload.url) == "string" then
+            settings.autoload = {
+                name = tostring(data.autoload.name or "SCRIPT"),
+                icon = tostring(data.autoload.icon or "★"),
+                url  = tostring(data.autoload.url),
+            }
+        end
+        if type(data.autoQueue) == "boolean" then
+            settings.autoQueue = data.autoQueue
+        end
+        if type(data.hubUrl) == "string" then
+            settings.hubUrl = data.hubUrl
+        end
     end
     THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
 end
-
--- =========================================================
---  APPLY THEME
--- =========================================================
 
 function applyTheme(name)
     local theme = THEMES[name] or THEMES.red
@@ -2836,17 +3816,46 @@ function applyTheme(name)
         if entry.sm then entry.sm.refresh() end
     end
 
+    if searchInput.Text ~= "" then
+        renderSearchResults(string.lower(searchInput.Text))
+    end
+
     saveSettings()
 end
 
--- =========================================================
---  BOOT
--- =========================================================
+local function runAutoload()
+    if not settings.autoload or not settings.autoload.url then return end
+    local url  = settings.autoload.url
+    local name = settings.autoload.name or "Autoload"
+
+    for _, entry in pairs(builtin) do
+        if entry.url == url and entry.sm then
+            doInject(entry.sm, url, name)
+            return
+        end
+    end
+    for _, entry in ipairs(userScripts) do
+        if entry.url == url and entry.sm then
+            doInject(entry.sm, url, name)
+            return
+        end
+    end
+end
+
+local function applyAutoQueue()
+    if not settings.autoQueue then return end
+    if settings.hubUrl == "" then return end
+    if type(queue_on_teleport) ~= "function" then return end
+    pcall(function()
+        queue_on_teleport('loadstring(game:HttpGet("' .. settings.hubUrl .. '"))()')
+    end)
+end
 
 local detectedDoors = isDoorsGame()
-print("[A-90 HUB v6.0] detected DOORS: " .. tostring(detectedDoors))
-print("[A-90 HUB v6.0] tier: " .. userTier)
-print("[A-90 HUB v6.0] file persistence: " .. (FS.ok and "OK" or "not available (executor)"))
+print("[A-90 HUB v8.5] detected DOORS: " .. tostring(detectedDoors))
+print("[A-90 HUB v8.5] tier: " .. userTier)
+print("[A-90 HUB v8.5] file persistence: " .. (FS.ok and "OK" or "not available (executor)"))
+print("[A-90 HUB v8.5] hub chat: F3 to open")
 gameLbl.Text = "place: " .. tostring(game.PlaceId)
 
 loadSettings()
@@ -2868,6 +3877,21 @@ do
     BTN.base1 = T.accent; BTN.base2 = T.accentDeep
     BTN.hov1 = T.accentHi; BTN.hov2 = T.emberHi
 
+    BTN_LOADING[1] = T.surface3
+    BTN_LOADING[2] = T.surface2
+    BTN_LOADING[3] = T.accent
+    BTN_LOADING[4] = T.ember
+
+    BTN_LOADED[1] = T.ember
+    BTN_LOADED[2] = T.accent
+    BTN_LOADED[3] = T.accentHi
+    BTN_LOADED[4] = T.emberHi
+
+    BTN_ERROR[1] = T.accentDeep
+    BTN_ERROR[2] = T.surface0
+    BTN_ERROR[3] = T.danger
+    BTN_ERROR[4] = T.accentDeep
+
     for _, fn in ipairs(themeAppliers) do pcall(fn) end
     for _, entry in pairs(builtin) do if entry.sm then entry.sm.refresh() end end
     for _, entry in ipairs(userScripts) do if entry.sm then entry.sm.refresh() end end
@@ -2884,9 +3908,13 @@ playIntro(function()
     applyTierBadge()
     renderFaves()
     renderUserScripts()
+
+    task.delay(0.4, runAutoload)
+    applyAutoQueue()
+
     if detectedDoors then
         task.delay(0.5, function() setTab("DOORS") end)
     end
 end)
 
-print("[A-90 HUB v6.0] loaded")
+print("[A-90 HUB v8.5] loaded")
