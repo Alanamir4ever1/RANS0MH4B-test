@@ -1,7 +1,11 @@
 --[[
-    A-90 HUB v8.5 [USER SCRIPTS + THEMES + CFG + AUTOLOAD + GLOBAL SEARCH + HUB CHAT]
+    A-90 HUB v9.0 [USER SCRIPTS + THEMES + CFG + AUTOLOAD + GLOBAL SEARCH + HUB CHAT + HOTKEYS + CUSTOM APPEARANCE]
     Fox / for Jack
-    Changelog v8.5: hub chat (F3) + R4NS0M nametag + message hook
+    Changelog v9.0:
+      - 4 new themes (CYBERPUNK, HACKER, ICE, BLOOD) -> 10 total
+      - Hotkey system: RightCtrl (toggle hub), RightShift (mini), RightAlt (chat)
+      - Custom hub avatar + background via Roblox asset ID
+      - Fixed SETUP overlap (themeGrid height 272, all below shifted +72px)
 ]]
 
 local CoreGui           = game:GetService("CoreGui")
@@ -15,11 +19,14 @@ local UserInputService  = game:GetService("UserInputService")
 
 local FONT_DISPLAY = Enum.Font.Code
 local FONT_BODY    = Enum.Font.Code
-local HUB_ICON     = "rbxassetid://128896072556015"
+local DEFAULT_HUB_ICON = "rbxassetid://128896072556015"
 
-local CHAT_HOTKEY = Enum.KeyCode.F3
 local CHAT_TAG    = "★ R4NS0M USER ★"
 local CHAT_PREFIX = "[R4NS0M]"
+
+local HOTKEY_TOGGLE = Enum.KeyCode.RightControl
+local HOTKEY_MINI   = Enum.KeyCode.RightShift
+local HOTKEY_CHAT   = Enum.KeyCode.RightAlt
 
 local OWNER_ID        = 8761682431
 local OWNER_FRIEND_ID = 3190738883
@@ -113,16 +120,59 @@ local THEMES = {
         ember      = Color3.fromRGB(200, 200, 200),
         emberHi    = Color3.fromRGB(230, 230, 230),
     },
+    cyberpunk = {
+        name = "CYBERPUNK",
+        accent     = Color3.fromRGB(220, 40, 170),
+        accentHi   = Color3.fromRGB(255, 90, 220),
+        accentGlow = Color3.fromRGB(255, 150, 240),
+        accentDeep = Color3.fromRGB(120, 10, 90),
+        accentEdge = Color3.fromRGB(180, 25, 140),
+        ember      = Color3.fromRGB(0, 220, 255),
+        emberHi    = Color3.fromRGB(100, 240, 255),
+    },
+    hacker = {
+        name = "HACKER",
+        accent     = Color3.fromRGB(30, 220, 80),
+        accentHi   = Color3.fromRGB(80, 255, 130),
+        accentGlow = Color3.fromRGB(150, 255, 180),
+        accentDeep = Color3.fromRGB(5, 100, 30),
+        accentEdge = Color3.fromRGB(20, 160, 55),
+        ember      = Color3.fromRGB(140, 255, 140),
+        emberHi    = Color3.fromRGB(200, 255, 200),
+    },
+    ice = {
+        name = "ICE",
+        accent     = Color3.fromRGB(90, 200, 240),
+        accentHi   = Color3.fromRGB(140, 230, 255),
+        accentGlow = Color3.fromRGB(200, 245, 255),
+        accentDeep = Color3.fromRGB(30, 110, 160),
+        accentEdge = Color3.fromRGB(55, 160, 210),
+        ember      = Color3.fromRGB(180, 220, 255),
+        emberHi    = Color3.fromRGB(220, 240, 255),
+    },
+    blood = {
+        name = "BLOOD",
+        accent     = Color3.fromRGB(140, 20, 20),
+        accentHi   = Color3.fromRGB(190, 40, 40),
+        accentGlow = Color3.fromRGB(240, 90, 90),
+        accentDeep = Color3.fromRGB(60, 5, 5),
+        accentEdge = Color3.fromRGB(105, 12, 12),
+        ember      = Color3.fromRGB(220, 60, 60),
+        emberHi    = Color3.fromRGB(255, 110, 110),
+    },
 }
 
 local currentTheme = "red"
-
 local customRGB = { r = 230, g = 45, b = 60 }
 
 local settings = {
-    autoload  = nil,
-    autoQueue = false,
-    hubUrl    = "",
+    autoload       = nil,
+    autoQueue      = false,
+    hubUrl         = "",
+    hotkeysEnabled = true,
+    customIconId   = "",
+    customBgId     = "",
+    bgTransparency = 0.85,
 }
 
 local function buildCustomTheme(r, g, b)
@@ -396,6 +446,18 @@ main.Parent = container
 corner(main, 20)
 grad(main, { T.surface1, T.surface0 }, 135)
 
+local customBg = Instance.new("ImageLabel")
+customBg.Name = "CustomBackground"
+customBg.Size = UDim2.new(1, 0, 1, 0)
+customBg.BackgroundTransparency = 1
+customBg.Image = ""
+customBg.ImageTransparency = 1
+customBg.ScaleType = Enum.ScaleType.Crop
+customBg.ZIndex = 1
+customBg.Visible = false
+customBg.Parent = main
+corner(customBg, 20)
+
 do
     local mainStroke = Instance.new("UIStroke")
     mainStroke.Thickness = 2; mainStroke.Color = Color3.new(1,1,1); mainStroke.Transparency = 0
@@ -431,6 +493,7 @@ end
 
 do
     local gridHolder = Instance.new("Frame")
+    gridHolder.Name = "GridHolder"
     gridHolder.Size = UDim2.new(1,0,1,0); gridHolder.BackgroundTransparency = 1
     gridHolder.ZIndex = 2; gridHolder.Parent = main
     local gridLines = {}
@@ -467,6 +530,7 @@ local applyTierBadge = function() end
 local autoStatusRef = nil
 local hubChatUI      = nil
 local chatMessages   = {}
+local iconImageRef   = nil
 
 do
     local header = Instance.new("Frame")
@@ -483,8 +547,9 @@ do
 
     local iconImage = Instance.new("ImageLabel")
     iconImage.Size = UDim2.new(1,0,1,0); iconImage.BackgroundTransparency = 1
-    iconImage.Image = HUB_ICON; iconImage.ScaleType = Enum.ScaleType.Crop
+    iconImage.Image = DEFAULT_HUB_ICON; iconImage.ScaleType = Enum.ScaleType.Crop
     iconImage.ZIndex = 12; iconImage.Parent = iconBox
+    iconImageRef = iconImage
 
     local titleGhost = Instance.new("TextLabel")
     titleGhost.Size = UDim2.new(1,-280,0,24); titleGhost.Position = UDim2.new(0,76,0,16)
@@ -563,7 +628,7 @@ do
 
     local verLbl = Instance.new("TextLabel")
     verLbl.Size = UDim2.new(1,0,1,0); verLbl.BackgroundTransparency = 1
-    verLbl.Text = "v8.5"; verLbl.TextColor3 = T.accentHi
+    verLbl.Text = "v9.0"; verLbl.TextColor3 = T.accentHi
     verLbl.Font = FONT_DISPLAY; verLbl.TextSize = 10; verLbl.ZIndex = 12; verLbl.Parent = verBadge
 
     onTheme(function()
@@ -739,6 +804,8 @@ for _, tab in ipairs(TABS) do
     pages[tab.name] = page
 end
 
+-- ============ FAVES ============
+
 local favesList = Instance.new("ScrollingFrame")
 favesList.Size = UDim2.new(1, -40, 1, -8); favesList.Position = UDim2.new(0, 20, 0, 4)
 favesList.BackgroundTransparency = 1; favesList.BorderSizePixel = 0
@@ -859,6 +926,8 @@ local function toggleFavorite(key)
     renderFaves()
 end
 
+-- ============ STATE MACHINE ============
+
 local S = { READY = "READY", LOADING = "LOADING", LOADED = "LOADED", ERROR = "ERROR" }
 
 local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHint, errorHint)
@@ -934,6 +1003,8 @@ local function makeStateMachine(ui, labelText, readyHint, loadingHint, loadedHin
     end)
     return sm
 end
+
+-- ============ GRID TILE ============
 
 local GRID = { cols = 3, pad = 20, gap = 12, tileW = 213, tileH = 110, rowGap = 12 }
 
@@ -1107,6 +1178,8 @@ local function doInject(sm, url, labelName)
     end)
 end
 
+-- ============ MAIN PAGE ============
+
 do
     local uiIY   = makeGridTile(pages.MAIN, 1, "$", "INFINITE YIELD", "> click to inject", "iy")
     local smIY   = makeStateMachine(uiIY, "INFINITE YIELD", "> click to inject", "> fetching payload...", "> running", "> load failed")
@@ -1127,6 +1200,8 @@ do
     uiFly.button.MouseButton1Click:Connect(builtin.fly.run)
     uiSkin.button.MouseButton1Click:Connect(builtin.skin.run)
 end
+
+-- ============ DOORS PAGE ============
 
 do
     local uiAbysall = makeGridTile(pages.DOORS, 1, "◈", "ABYSALL HUB", "> click to inject", "abysall")
@@ -1149,6 +1224,8 @@ do
     uiMSDoors.button.MouseButton1Click:Connect(builtin.msdoors.run)
 end
 
+-- ============ TOOLS PAGE ============
+
 do
     local uiDex = makeGridTile(pages.TOOLS, 1, "◇", "DEX", "> click to inject", "dex")
     local smDex = makeStateMachine(uiDex, "DEX", "> click to inject", "> loading Dex...", "> active", "> load failed")
@@ -1169,6 +1246,8 @@ do
     uiHydro.button.MouseButton1Click:Connect(builtin.hydro.run)
     uiCMDX.button.MouseButton1Click:Connect(builtin.cmdx.run)
 end
+
+-- ============ UTILITY PAGE ============
 
 do
     local uiRejoin = makeGridTile(pages.UTILITY, 1, "↻", "REJOIN", "> same server", "rejoin")
@@ -1271,6 +1350,8 @@ do
     builtin.antiafk = { ui = uiAntiAfk, sm = nil, label = "ANTI-AFK", icon = "☯", run = runAntiAfk }
     uiAntiAfk.button.MouseButton1Click:Connect(runAntiAfk)
 end
+
+-- ============ CUSTOM PAGE ============
 
 local history = {}
 local urlInput
@@ -1491,6 +1572,8 @@ do
         end)
     end)
 end
+
+-- ============ USER PAGE + MODAL ============
 
 function saveUserScripts()
     local out = {}
@@ -2011,6 +2094,8 @@ do
     end)
 end
 
+-- ============ SETTINGS PAGE ============
+
 do
     local setupWrap = Instance.new("ScrollingFrame")
     setupWrap.Size = UDim2.new(1, -40, 1, -8)
@@ -2019,7 +2104,7 @@ do
     setupWrap.BorderSizePixel = 0
     setupWrap.ScrollBarThickness = 4
     setupWrap.ScrollBarImageColor3 = T.accent
-    setupWrap.CanvasSize = UDim2.new(0, 0, 0, 960)
+    setupWrap.CanvasSize = UDim2.new(0, 0, 0, 1350)
     setupWrap.ZIndex = 8
     setupWrap.Parent = pages.SETUP
 
@@ -2037,14 +2122,15 @@ do
     themeTitle.Parent = setupWrap
 
     local themeGrid = Instance.new("Frame")
-    themeGrid.Size = UDim2.new(1, 0, 0, 130)
+    themeGrid.Size = UDim2.new(1, 0, 0, 272)
     themeGrid.Position = UDim2.new(0, 0, 0, 24)
     themeGrid.BackgroundTransparency = 1
     themeGrid.ZIndex = 8
     themeGrid.Parent = setupWrap
 
     themeButtons = {}
-    local themeOrder = { "red", "blue", "green", "purple", "gold", "mono" }
+    local themeOrder = { "red", "blue", "green", "purple", "gold", "mono",
+                         "cyberpunk", "hacker", "ice", "blood" }
 
     for i, key in ipairs(themeOrder) do
         local th = THEMES[key]
@@ -2121,7 +2207,7 @@ do
 
     local rgbTitle = Instance.new("TextLabel")
     rgbTitle.Size = UDim2.new(1, 0, 0, 18)
-    rgbTitle.Position = UDim2.new(0, 0, 0, 168)
+    rgbTitle.Position = UDim2.new(0, 0, 0, 308)
     rgbTitle.BackgroundTransparency = 1
     rgbTitle.Text = "CUSTOM RGB"
     rgbTitle.TextColor3 = T.text2
@@ -2133,7 +2219,7 @@ do
 
     local rgbHolder = Instance.new("Frame")
     rgbHolder.Size = UDim2.new(1, 0, 0, 100)
-    rgbHolder.Position = UDim2.new(0, 0, 0, 192)
+    rgbHolder.Position = UDim2.new(0, 0, 0, 332)
     rgbHolder.BackgroundTransparency = 1
     rgbHolder.ZIndex = 8
     rgbHolder.Parent = setupWrap
@@ -2345,9 +2431,250 @@ do
         applyTheme("custom")
     end)
 
+    -- APPEARANCE
+    local appTitle = Instance.new("TextLabel")
+    appTitle.Size = UDim2.new(1, 0, 0, 18)
+    appTitle.Position = UDim2.new(0, 0, 0, 450)
+    appTitle.BackgroundTransparency = 1
+    appTitle.Text = "APPEARANCE (avatar + background by Roblox asset ID)"
+    appTitle.TextColor3 = T.text2
+    appTitle.Font = FONT_DISPLAY
+    appTitle.TextSize = 11
+    appTitle.TextXAlignment = Enum.TextXAlignment.Left
+    appTitle.ZIndex = 9
+    appTitle.Parent = setupWrap
+
+    local function makeAppField(yPos, label, placeholder, initial)
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(1, 0, 0, 14)
+        lbl.Position = UDim2.new(0, 0, 0, yPos)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = label
+        lbl.TextColor3 = T.text3
+        lbl.Font = FONT_DISPLAY
+        lbl.TextSize = 10
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.ZIndex = 9
+        lbl.Parent = setupWrap
+
+        local box = Instance.new("Frame")
+        box.Size = UDim2.new(1, 0, 0, 32)
+        box.Position = UDim2.new(0, 0, 0, yPos + 16)
+        box.BackgroundColor3 = T.surface2
+        box.BackgroundTransparency = 0.3
+        box.BorderSizePixel = 0
+        box.ZIndex = 8
+        box.Parent = setupWrap
+        corner(box, 8)
+        local st = stroke(box, T.accent, 1, 0.6)
+        onTheme(function() st.Color = T.accent end)
+
+        local input = Instance.new("TextBox")
+        input.Size = UDim2.new(1, -20, 1, 0)
+        input.Position = UDim2.new(0, 10, 0, 0)
+        input.BackgroundTransparency = 1
+        input.Text = initial or ""
+        input.PlaceholderText = placeholder
+        input.PlaceholderColor3 = T.text3
+        input.TextColor3 = T.text0
+        input.Font = FONT_DISPLAY
+        input.TextSize = 11
+        input.TextXAlignment = Enum.TextXAlignment.Left
+        input.ClearTextOnFocus = false
+        input.ZIndex = 9
+        input.Parent = box
+        return input
+    end
+
+    local iconInput = makeAppField(476, "> hub avatar ID (rbxassetid://... or just number)",
+        "rbxassetid://128896072556015", settings.customIconId)
+    local bgInput = makeAppField(532, "> hub background ID (rbxassetid://... or just number)",
+        "rbxassetid://...", settings.customBgId)
+
+    local function applyCustomIcon()
+        local raw = iconInput.Text
+        if raw == "" then
+            if iconImageRef then iconImageRef.Image = DEFAULT_HUB_ICON end
+            settings.customIconId = ""
+            saveSettings()
+            return
+        end
+        local img = raw
+        if not img:match("^rbxassetid://") then
+            img = "rbxassetid://" .. img:gsub("%D", "")
+        end
+        if iconImageRef then iconImageRef.Image = img end
+        settings.customIconId = img
+        saveSettings()
+    end
+
+    local function applyCustomBg()
+        local raw = bgInput.Text
+        if raw == "" then
+            customBg.Visible = false
+            customBg.ImageTransparency = 1
+            settings.customBgId = ""
+            saveSettings()
+            return
+        end
+        local img = raw
+        if not img:match("^rbxassetid://") then
+            img = "rbxassetid://" .. img:gsub("%D", "")
+        end
+        customBg.Image = img
+        customBg.ImageTransparency = settings.bgTransparency or 0.85
+        customBg.Visible = true
+        settings.customBgId = img
+        saveSettings()
+    end
+
+    local applyIconBtn = Instance.new("TextButton")
+    applyIconBtn.Size = UDim2.new(0, 200, 0, 30)
+    applyIconBtn.Position = UDim2.new(0, 0, 0, 588)
+    applyIconBtn.BackgroundColor3 = T.accent
+    applyIconBtn.BackgroundTransparency = 0.15
+    applyIconBtn.BorderSizePixel = 0
+    applyIconBtn.Text = "APPLY AVATAR"
+    applyIconBtn.TextColor3 = Color3.new(1,1,1)
+    applyIconBtn.Font = FONT_DISPLAY
+    applyIconBtn.TextSize = 12
+    applyIconBtn.AutoButtonColor = false
+    applyIconBtn.ZIndex = 9
+    applyIconBtn.Parent = setupWrap
+    corner(applyIconBtn, 8)
+    local aiStroke = stroke(applyIconBtn, T.accentHi, 1, 0.5)
+    onTheme(function()
+        applyIconBtn.BackgroundColor3 = T.accent
+        aiStroke.Color = T.accentHi
+    end)
+    applyIconBtn.MouseEnter:Connect(function() tween(applyIconBtn, { BackgroundTransparency = 0 }, 0.15) end)
+    applyIconBtn.MouseLeave:Connect(function() tween(applyIconBtn, { BackgroundTransparency = 0.15 }, 0.15) end)
+    applyIconBtn.MouseButton1Click:Connect(function()
+        applyCustomIcon()
+        applyIconBtn.Text = "✓ APPLIED"
+        task.delay(1.5, function() applyIconBtn.Text = "APPLY AVATAR" end)
+    end)
+
+    local applyBgBtn = Instance.new("TextButton")
+    applyBgBtn.Size = UDim2.new(0, 200, 0, 30)
+    applyBgBtn.Position = UDim2.new(0, 220, 0, 588)
+    applyBgBtn.BackgroundColor3 = T.accent
+    applyBgBtn.BackgroundTransparency = 0.15
+    applyBgBtn.BorderSizePixel = 0
+    applyBgBtn.Text = "APPLY BACKGROUND"
+    applyBgBtn.TextColor3 = Color3.new(1,1,1)
+    applyBgBtn.Font = FONT_DISPLAY
+    applyBgBtn.TextSize = 12
+    applyBgBtn.AutoButtonColor = false
+    applyBgBtn.ZIndex = 9
+    applyBgBtn.Parent = setupWrap
+    corner(applyBgBtn, 8)
+    local abStroke = stroke(applyBgBtn, T.accentHi, 1, 0.5)
+    onTheme(function()
+        applyBgBtn.BackgroundColor3 = T.accent
+        abStroke.Color = T.accentHi
+    end)
+    applyBgBtn.MouseEnter:Connect(function() tween(applyBgBtn, { BackgroundTransparency = 0 }, 0.15) end)
+    applyBgBtn.MouseLeave:Connect(function() tween(applyBgBtn, { BackgroundTransparency = 0.15 }, 0.15) end)
+    applyBgBtn.MouseButton1Click:Connect(function()
+        applyCustomBg()
+        applyBgBtn.Text = "✓ APPLIED"
+        task.delay(1.5, function() applyBgBtn.Text = "APPLY BACKGROUND" end)
+    end)
+
+    local resetAppBtn = Instance.new("TextButton")
+    resetAppBtn.Size = UDim2.new(0, 200, 0, 30)
+    resetAppBtn.Position = UDim2.new(0, 440, 0, 588)
+    resetAppBtn.BackgroundColor3 = T.surface3
+    resetAppBtn.BackgroundTransparency = 0.3
+    resetAppBtn.BorderSizePixel = 0
+    resetAppBtn.Text = "RESET APPEARANCE"
+    resetAppBtn.TextColor3 = T.text1
+    resetAppBtn.Font = FONT_DISPLAY
+    resetAppBtn.TextSize = 12
+    resetAppBtn.AutoButtonColor = false
+    resetAppBtn.ZIndex = 9
+    resetAppBtn.Parent = setupWrap
+    corner(resetAppBtn, 8)
+    resetAppBtn.MouseEnter:Connect(function() tween(resetAppBtn, { BackgroundTransparency = 0, TextColor3 = T.danger }, 0.15) end)
+    resetAppBtn.MouseLeave:Connect(function() tween(resetAppBtn, { BackgroundTransparency = 0.3, TextColor3 = T.text1 }, 0.15) end)
+    resetAppBtn.MouseButton1Click:Connect(function()
+        iconInput.Text = ""
+        bgInput.Text = ""
+        settings.customIconId = ""
+        settings.customBgId = ""
+        if iconImageRef then iconImageRef.Image = DEFAULT_HUB_ICON end
+        customBg.Visible = false
+        customBg.ImageTransparency = 1
+        saveSettings()
+    end)
+
+    -- HOTKEYS
+    local hotkeyTitle = Instance.new("TextLabel")
+    hotkeyTitle.Size = UDim2.new(1, 0, 0, 18)
+    hotkeyTitle.Position = UDim2.new(0, 0, 0, 634)
+    hotkeyTitle.BackgroundTransparency = 1
+    hotkeyTitle.Text = "HOTKEYS"
+    hotkeyTitle.TextColor3 = T.text2
+    hotkeyTitle.Font = FONT_DISPLAY
+    hotkeyTitle.TextSize = 11
+    hotkeyTitle.TextXAlignment = Enum.TextXAlignment.Left
+    hotkeyTitle.ZIndex = 9
+    hotkeyTitle.Parent = setupWrap
+
+    local hotkeyInfo = Instance.new("TextLabel")
+    hotkeyInfo.Size = UDim2.new(1, 0, 0, 16)
+    hotkeyInfo.Position = UDim2.new(0, 0, 0, 656)
+    hotkeyInfo.BackgroundTransparency = 1
+    hotkeyInfo.Text = "> RightCtrl = toggle hub  ·  RightShift = mini  ·  RightAlt = chat  ·  F2 = screenshot"
+    hotkeyInfo.TextColor3 = T.text3
+    hotkeyInfo.Font = FONT_DISPLAY
+    hotkeyInfo.TextSize = 10
+    hotkeyInfo.TextXAlignment = Enum.TextXAlignment.Left
+    hotkeyInfo.ZIndex = 9
+    hotkeyInfo.Parent = setupWrap
+
+    local hotkeyToggle = Instance.new("TextButton")
+    hotkeyToggle.Size = UDim2.new(0, 300, 0, 32)
+    hotkeyToggle.Position = UDim2.new(0, 0, 0, 678)
+    hotkeyToggle.BackgroundColor3 = T.surface2
+    hotkeyToggle.BackgroundTransparency = 0.3
+    hotkeyToggle.BorderSizePixel = 0
+    hotkeyToggle.Text = "HOTKEYS: " .. (settings.hotkeysEnabled and "ENABLED" or "DISABLED")
+    hotkeyToggle.TextColor3 = T.text1
+    hotkeyToggle.Font = FONT_DISPLAY
+    hotkeyToggle.TextSize = 12
+    hotkeyToggle.AutoButtonColor = false
+    hotkeyToggle.ZIndex = 9
+    hotkeyToggle.Parent = setupWrap
+    corner(hotkeyToggle, 8)
+    local hkStroke = stroke(hotkeyToggle, T.accent, 1, 0.5)
+    onTheme(function() hkStroke.Color = T.accent end)
+
+    local function refreshHotkeyBtn()
+        if settings.hotkeysEnabled then
+            hotkeyToggle.Text = "HOTKEYS: ENABLED"
+            hotkeyToggle.BackgroundColor3 = T.accent
+            hotkeyToggle.TextColor3 = Color3.new(1,1,1)
+        else
+            hotkeyToggle.Text = "HOTKEYS: DISABLED"
+            hotkeyToggle.BackgroundColor3 = T.surface2
+            hotkeyToggle.TextColor3 = T.text1
+        end
+    end
+    refreshHotkeyBtn()
+    onTheme(function() refreshHotkeyBtn() end)
+
+    hotkeyToggle.MouseButton1Click:Connect(function()
+        settings.hotkeysEnabled = not settings.hotkeysEnabled
+        refreshHotkeyBtn()
+        saveSettings()
+    end)
+
+    -- DATA MANAGEMENT
     local dataTitle = Instance.new("TextLabel")
     dataTitle.Size = UDim2.new(1, 0, 0, 18)
-    dataTitle.Position = UDim2.new(0, 0, 0, 310)
+    dataTitle.Position = UDim2.new(0, 0, 0, 728)
     dataTitle.BackgroundTransparency = 1
     dataTitle.Text = "DATA MANAGEMENT"
     dataTitle.TextColor3 = T.text2
@@ -2373,7 +2700,6 @@ do
         b.Parent = setupWrap
         corner(b, 8)
         local st = stroke(b, T.accent, 1, 0.4)
-
         onTheme(function() st.Color = T.accent end)
 
         b.MouseEnter:Connect(function()
@@ -2389,7 +2715,7 @@ do
         return b
     end
 
-    makeDataBtn(0,   334, 210, "CLEAR FAVORITES", function()
+    makeDataBtn(0,   752, 210, "CLEAR FAVORITES", function()
         favOn = {}
         favOrder = {}
         for _, entry in pairs(builtin) do
@@ -2402,13 +2728,13 @@ do
         renderFaves()
     end)
 
-    makeDataBtn(220, 334, 210, "CLEAR HISTORY", function()
+    makeDataBtn(220, 752, 210, "CLEAR HISTORY", function()
         history = {}
         saveHistory()
         renderHistory()
     end)
 
-    makeDataBtn(0,   376, 210, "CLEAR CACHE", function()
+    makeDataBtn(0,   794, 210, "CLEAR CACHE", function()
         if not FS.ok then return end
         pcall(function()
             if type(listfiles) ~= "function" then return end
@@ -2418,16 +2744,17 @@ do
         end)
     end)
 
-    makeDataBtn(220, 376, 210, "RESET THEME", function()
+    makeDataBtn(220, 794, 210, "RESET THEME", function()
         for k, btn in pairs(themeButtons) do btn.check.Text = "" end
         if themeButtons.red then themeButtons.red.check.Text = "✓" end
         if rgbUI.customCheck then rgbUI.customCheck.Text = "" end
         applyTheme("red")
     end)
 
+    -- CONFIG
     local cfgTitle = Instance.new("TextLabel")
     cfgTitle.Size = UDim2.new(1, 0, 0, 18)
-    cfgTitle.Position = UDim2.new(0, 0, 0, 428)
+    cfgTitle.Position = UDim2.new(0, 0, 0, 846)
     cfgTitle.BackgroundTransparency = 1
     cfgTitle.Text = "CONFIG (EXPORT / IMPORT)"
     cfgTitle.TextColor3 = T.text2
@@ -2439,7 +2766,7 @@ do
 
     local cfgBox = Instance.new("Frame")
     cfgBox.Size = UDim2.new(1, 0, 0, 90)
-    cfgBox.Position = UDim2.new(0, 0, 0, 452)
+    cfgBox.Position = UDim2.new(0, 0, 0, 870)
     cfgBox.BackgroundColor3 = T.surface2
     cfgBox.BackgroundTransparency = 0.3
     cfgBox.BorderSizePixel = 0
@@ -2469,7 +2796,7 @@ do
 
     local cfgStatus = Instance.new("TextLabel")
     cfgStatus.Size = UDim2.new(1, 0, 0, 14)
-    cfgStatus.Position = UDim2.new(0, 0, 0, 550)
+    cfgStatus.Position = UDim2.new(0, 0, 0, 968)
     cfgStatus.BackgroundTransparency = 1
     cfgStatus.Text = ""
     cfgStatus.TextColor3 = T.text2
@@ -2511,14 +2838,21 @@ do
         return b
     end
 
-    makeCfgBtn(0, 572, 210, "EXPORT CFG (COPY)", function()
+    makeCfgBtn(0, 990, 210, "EXPORT CFG (COPY)", function()
         local cfg = {
-            version   = "8.5",
+            version   = "9.0",
             theme     = currentTheme,
             customRGB = { r = customRGB.r, g = customRGB.g, b = customRGB.b },
             favorites = favOrder,
             userScripts = {},
-            settings  = { autoload = settings.autoload, autoQueue = settings.autoQueue, hubUrl = settings.hubUrl },
+            settings  = {
+                autoload = settings.autoload,
+                autoQueue = settings.autoQueue,
+                hubUrl = settings.hubUrl,
+                hotkeysEnabled = settings.hotkeysEnabled,
+                customIconId = settings.customIconId,
+                customBgId = settings.customBgId,
+            },
         }
         for _, e in ipairs(userScripts) do
             table.insert(cfg.userScripts, { name = e.name, icon = e.icon, url = e.url })
@@ -2545,7 +2879,7 @@ do
         cfgStatus.TextColor3 = T.ok
     end)
 
-    makeCfgBtn(220, 572, 210, "IMPORT CFG (PASTE)", function()
+    makeCfgBtn(220, 990, 210, "IMPORT CFG (PASTE)", function()
         local txt = cfgInput.Text
         if txt == "" then
             cfgStatus.Text = "> empty box"
@@ -2616,6 +2950,23 @@ do
             if type(data.settings.hubUrl) == "string" then
                 settings.hubUrl = data.settings.hubUrl
             end
+            if type(data.settings.hotkeysEnabled) == "boolean" then
+                settings.hotkeysEnabled = data.settings.hotkeysEnabled
+            end
+            if type(data.settings.customIconId) == "string" then
+                settings.customIconId = data.settings.customIconId
+                if settings.customIconId ~= "" and iconImageRef then
+                    iconImageRef.Image = settings.customIconId
+                end
+            end
+            if type(data.settings.customBgId) == "string" then
+                settings.customBgId = data.settings.customBgId
+                if settings.customBgId ~= "" then
+                    customBg.Image = settings.customBgId
+                    customBg.ImageTransparency = settings.bgTransparency or 0.85
+                    customBg.Visible = true
+                end
+            end
         end
 
         applyTheme(currentTheme)
@@ -2629,9 +2980,10 @@ do
         cfgStatus.TextColor3 = T.ok
     end)
 
+    -- AUTOLOAD
     local autoTitle = Instance.new("TextLabel")
     autoTitle.Size = UDim2.new(1, 0, 0, 18)
-    autoTitle.Position = UDim2.new(0, 0, 0, 636)
+    autoTitle.Position = UDim2.new(0, 0, 0, 1044)
     autoTitle.BackgroundTransparency = 1
     autoTitle.Text = "AUTOLOAD"
     autoTitle.TextColor3 = T.text2
@@ -2643,7 +2995,7 @@ do
 
     local autoStatus = Instance.new("TextLabel")
     autoStatus.Size = UDim2.new(1, 0, 0, 20)
-    autoStatus.Position = UDim2.new(0, 0, 0, 658)
+    autoStatus.Position = UDim2.new(0, 0, 0, 1066)
     autoStatus.BackgroundTransparency = 1
     autoStatus.Text = "> current: none"
     autoStatus.TextColor3 = T.text0
@@ -2839,12 +3191,12 @@ do
         pickerModal.Visible = false
     end)
 
-    makeCfgBtn(0, 682, 210, "SELECT AUTOLOAD", function()
+    makeCfgBtn(0, 1090, 210, "SELECT AUTOLOAD", function()
         rebuildPickerList()
         pickerModal.Visible = true
     end)
 
-    makeCfgBtn(220, 682, 210, "CLEAR AUTOLOAD", function()
+    makeCfgBtn(220, 1090, 210, "CLEAR AUTOLOAD", function()
         settings.autoload = nil
         updateAutoStatus()
         saveSettings()
@@ -2852,7 +3204,7 @@ do
 
     local queueBtn = Instance.new("TextButton")
     queueBtn.Size = UDim2.new(0, 430, 0, 34)
-    queueBtn.Position = UDim2.new(0, 0, 0, 726)
+    queueBtn.Position = UDim2.new(0, 0, 0, 1134)
     queueBtn.BackgroundColor3 = T.surface2
     queueBtn.BackgroundTransparency = 0.3
     queueBtn.BorderSizePixel = 0
@@ -2892,7 +3244,7 @@ do
 
     local hubUrlLbl = Instance.new("TextLabel")
     hubUrlLbl.Size = UDim2.new(1, 0, 0, 14)
-    hubUrlLbl.Position = UDim2.new(0, 0, 0, 768)
+    hubUrlLbl.Position = UDim2.new(0, 0, 0, 1176)
     hubUrlLbl.BackgroundTransparency = 1
     hubUrlLbl.Text = "> hub URL (used for auto-queue)"
     hubUrlLbl.TextColor3 = T.text3
@@ -2904,7 +3256,7 @@ do
 
     local hubUrlBox = Instance.new("Frame")
     hubUrlBox.Size = UDim2.new(1, 0, 0, 32)
-    hubUrlBox.Position = UDim2.new(0, 0, 0, 786)
+    hubUrlBox.Position = UDim2.new(0, 0, 0, 1194)
     hubUrlBox.BackgroundColor3 = T.surface2
     hubUrlBox.BackgroundTransparency = 0.3
     hubUrlBox.BorderSizePixel = 0
@@ -2934,26 +3286,14 @@ do
         saveSettings()
     end)
 
-    local queueHint = Instance.new("TextLabel")
-    queueHint.Size = UDim2.new(1, 0, 0, 14)
-    queueHint.Position = UDim2.new(0, 0, 0, 824)
-    queueHint.BackgroundTransparency = 1
-    queueHint.Text = "> requires executor support for queue_on_teleport"
-    queueHint.TextColor3 = T.text3
-    queueHint.Font = FONT_DISPLAY
-    queueHint.TextSize = 10
-    queueHint.TextXAlignment = Enum.TextXAlignment.Left
-    queueHint.ZIndex = 9
-    queueHint.Parent = setupWrap
-
     local infoLbl = Instance.new("TextLabel")
     infoLbl.Size = UDim2.new(1, 0, 0, 60)
-    infoLbl.Position = UDim2.new(0, 0, 0, 860)
+    infoLbl.Position = UDim2.new(0, 0, 0, 1242)
     infoLbl.BackgroundTransparency = 1
     infoLbl.Text = "> folder: " .. (FS.ok and (FOLDER .. "/") or "not available (executor)")
         .. "\n> saved: favorites.json · history.json · user_scripts.json · settings.json"
         .. "\n> cached: " .. CACHE_DIR
-        .. "\n> chat: [F3] to open/close"
+        .. "\n> chat: [RightAlt] · toggle: [RightCtrl] · mini: [RightShift]"
     infoLbl.TextColor3 = T.text3
     infoLbl.Font = FONT_DISPLAY
     infoLbl.TextSize = 10
@@ -2962,6 +3302,8 @@ do
     infoLbl.ZIndex = 9
     infoLbl.Parent = setupWrap
 end
+
+-- ============ FOOTER ============
 
 local footer = Instance.new("Frame")
 footer.Size = UDim2.new(1,-40,0,24); footer.Position = UDim2.new(0,20,1,-34)
@@ -2982,7 +3324,7 @@ fpsLbl.TextSize = 10; fpsLbl.TextXAlignment = Enum.TextXAlignment.Left
 fpsLbl.ZIndex = 10; fpsLbl.Parent = footer
 
 local gameLbl = Instance.new("TextLabel")
-gameLbl.Size = UDim2.new(0,200,1,0); gameLbl.Position = UDim2.new(0.5,-100,0,4)
+gameLbl.Size = UDim2.new(0,300,1,0); gameLbl.Position = UDim2.new(0.5,-150,0,4)
 gameLbl.BackgroundTransparency = 1; gameLbl.Text = ""
 gameLbl.TextColor3 = T.accent; gameLbl.Font = FONT_DISPLAY
 gameLbl.TextSize = 10; gameLbl.TextXAlignment = Enum.TextXAlignment.Center
@@ -2991,7 +3333,7 @@ gameLbl.ZIndex = 10; gameLbl.Parent = footer
 onTheme(function() gameLbl.TextColor3 = T.accent end)
 
 local tagLbl = Instance.new("TextLabel")
-tagLbl.Size = UDim2.new(0,120,1,0); tagLbl.Position = UDim2.new(1,-120,0,4)
+tagLbl.Size = UDim2.new(0,180,1,0); tagLbl.Position = UDim2.new(1,-180,0,4)
 tagLbl.BackgroundTransparency = 1; tagLbl.Text = "by fox · for jack"
 tagLbl.TextColor3 = T.text3; tagLbl.Font = FONT_DISPLAY
 tagLbl.TextSize = 10; tagLbl.TextXAlignment = Enum.TextXAlignment.Right
@@ -3010,6 +3352,8 @@ do
     end)
 end
 
+-- ============ MINI REOPEN ============
+
 do
     local MINI_DEFAULT_POS = UDim2.new(0.5, -26, 0, 80)
 
@@ -3025,7 +3369,7 @@ do
 
     local miniImg = Instance.new("ImageLabel")
     miniImg.Size = UDim2.new(1,0,1,0); miniImg.BackgroundTransparency = 1
-    miniImg.Image = HUB_ICON; miniImg.ScaleType = Enum.ScaleType.Crop
+    miniImg.Image = DEFAULT_HUB_ICON; miniImg.ScaleType = Enum.ScaleType.Crop
     miniImg.ZIndex = 252; miniImg.Parent = miniIcon
 
     local miniBtn = Instance.new("TextButton")
@@ -3080,6 +3424,8 @@ do
         miniIcon.Visible = true
     end)
 end
+
+-- ============ PANIC / SCREENSHOT ============
 
 local screenshotMode = false
 local restoreDot
@@ -3146,9 +3492,7 @@ function setScreenshot(on)
     end
 end
 
--- =========================================================
---  HOOK: ловим сообщения других игроков с префиксом [R4NS0M]
--- =========================================================
+-- ============ HOOK: chat messages ============
 
 task.spawn(function()
     local TextChatService = game:GetService("TextChatService")
@@ -3186,9 +3530,7 @@ task.spawn(function()
     end
 end)
 
--- =========================================================
---  TAB SWITCHING + SEARCH (across all tabs)
--- =========================================================
+-- ============ TAB SWITCHING + GLOBAL SEARCH ============
 
 local activeTab = "MAIN"
 
@@ -3329,9 +3671,7 @@ local function buildResultRow(m, y)
     onTheme(function() goBtn.BackgroundColor3 = T.accent end)
 
     local function activate()
-        if m.run then
-            task.spawn(m.run)
-        end
+        if m.run then task.spawn(m.run) end
     end
 
     goBtn.MouseEnter:Connect(function() tween(goBtn, { BackgroundTransparency = 0 }, 0.15) end)
@@ -3454,9 +3794,7 @@ end
 
 searchInput:GetPropertyChangedSignal("Text"):Connect(applySearchFilter)
 
--- =========================================================
---  HUB CHAT + OWN NAMETAG
--- =========================================================
+-- ============ HUB CHAT + OWN NAMETAG ============
 
 local nametagGui = nil
 
@@ -3553,7 +3891,7 @@ local function createChatUI()
     title.Size = UDim2.new(1, -60, 0, 24)
     title.Position = UDim2.new(0, 10, 0, 4)
     title.BackgroundTransparency = 1
-    title.Text = "★ R4NS0M CHAT  ·  [F3]"
+    title.Text = "★ R4NS0M CHAT  ·  [RightAlt]"
     title.TextColor3 = T.accentHi
     title.Font = FONT_DISPLAY
     title.TextSize = 12
@@ -3716,15 +4054,37 @@ local function createChatUI()
     return hubChatUI
 end
 
+-- ============ HOTKEY SYSTEM ============
+
 UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
+
     if input.KeyCode == Enum.KeyCode.F2 then
         setScreenshot(not screenshotMode)
+        return
     end
+
     if input.KeyCode == Enum.KeyCode.X and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then
         panicWipe()
+        return
     end
-    if input.KeyCode == CHAT_HOTKEY then
+
+    if not settings.hotkeysEnabled then return end
+
+    if input.KeyCode == HOTKEY_TOGGLE then
+        if container.Visible then
+            container.Visible = false
+            miniIcon.Visible = true
+        else
+            miniIcon.Visible = false
+            container.Visible = true
+            containerScale.Scale = 0.5
+            tween(containerScale, { Scale = 1 }, 0.35, Enum.EasingStyle.Back)
+        end
+    elseif input.KeyCode == HOTKEY_MINI then
+        miniIcon.Visible = not miniIcon.Visible
+        if miniIcon.Visible then container.Visible = false end
+    elseif input.KeyCode == HOTKEY_CHAT then
         local ui = createChatUI()
         ui.frame.Visible = not ui.frame.Visible
         if ui.frame.Visible then
@@ -3736,6 +4096,8 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     end
 end)
 
+-- ============ SETTINGS PERSISTENCE ============
+
 function saveSettings()
     writeJSON(SETTINGS_FILE, {
         theme = currentTheme,
@@ -3743,6 +4105,10 @@ function saveSettings()
         autoload = settings.autoload,
         autoQueue = settings.autoQueue,
         hubUrl = settings.hubUrl,
+        hotkeysEnabled = settings.hotkeysEnabled,
+        customIconId = settings.customIconId,
+        customBgId = settings.customBgId,
+        bgTransparency = settings.bgTransparency,
     })
 end
 
@@ -3772,9 +4138,23 @@ local function loadSettings()
         if type(data.hubUrl) == "string" then
             settings.hubUrl = data.hubUrl
         end
+        if type(data.hotkeysEnabled) == "boolean" then
+            settings.hotkeysEnabled = data.hotkeysEnabled
+        end
+        if type(data.customIconId) == "string" then
+            settings.customIconId = data.customIconId
+        end
+        if type(data.customBgId) == "string" then
+            settings.customBgId = data.customBgId
+        end
+        if type(data.bgTransparency) == "number" then
+            settings.bgTransparency = data.bgTransparency
+        end
     end
     THEMES.custom = buildCustomTheme(customRGB.r, customRGB.g, customRGB.b)
 end
+
+-- ============ APPLY THEME ============
 
 function applyTheme(name)
     local theme = THEMES[name] or THEMES.red
@@ -3851,11 +4231,24 @@ local function applyAutoQueue()
     end)
 end
 
+local function applyCustomAppearance()
+    if settings.customIconId and settings.customIconId ~= "" and iconImageRef then
+        iconImageRef.Image = settings.customIconId
+    end
+    if settings.customBgId and settings.customBgId ~= "" then
+        customBg.Image = settings.customBgId
+        customBg.ImageTransparency = settings.bgTransparency or 0.85
+        customBg.Visible = true
+    end
+end
+
+-- ============ BOOT ============
+
 local detectedDoors = isDoorsGame()
-print("[A-90 HUB v8.5] detected DOORS: " .. tostring(detectedDoors))
-print("[A-90 HUB v8.5] tier: " .. userTier)
-print("[A-90 HUB v8.5] file persistence: " .. (FS.ok and "OK" or "not available (executor)"))
-print("[A-90 HUB v8.5] hub chat: F3 to open")
+print("[A-90 HUB v9.0] detected DOORS: " .. tostring(detectedDoors))
+print("[A-90 HUB v9.0] tier: " .. userTier)
+print("[A-90 HUB v9.0] file persistence: " .. (FS.ok and "OK" or "not available (executor)"))
+print("[A-90 HUB v9.0] themes: 10 · hotkeys: RightCtrl / RightShift / RightAlt")
 gameLbl.Text = "place: " .. tostring(game.PlaceId)
 
 loadSettings()
@@ -3901,6 +4294,8 @@ for k, btn in pairs(themeButtons) do
     btn.check.Text = (k == currentTheme) and "✓" or ""
 end
 
+applyCustomAppearance()
+
 playIntro(function()
     container.Visible = true
     containerScale.Scale = 0.05
@@ -3917,4 +4312,4 @@ playIntro(function()
     end
 end)
 
-print("[A-90 HUB v8.5] loaded")
+print("[A-90 HUB v9.0] loaded")
