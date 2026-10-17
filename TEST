@@ -1,11 +1,9 @@
 --[[
-    A-90 HUB v9.0 [USER SCRIPTS + THEMES + CFG + AUTOLOAD + GLOBAL SEARCH + HUB CHAT + HOTKEYS + CUSTOM APPEARANCE]
+    A-90 HUB v9.0 [USER SCRIPTS + THEMES + CFG + AUTOLOAD + GLOBAL SEARCH + HUB CHAT + HOTKEYS + CUSTOM APPEARANCE + KEY SYSTEM]
     Fox / for Jack
-    Changelog v9.0:
-      - 4 new themes (CYBERPUNK, HACKER, ICE, BLOOD) -> 10 total
-      - Hotkey system: RightCtrl (toggle hub), RightShift (mini), RightAlt (chat)
-      - Custom hub avatar + background via Roblox asset ID
-      - Fixed SETUP overlap (themeGrid height 272, all below shifted +72px)
+    Changelog v9.1:
+      - Key System added (R4NS0000M)
+      - Discord link integration
 ]]
 
 local CoreGui           = game:GetService("CoreGui")
@@ -4296,20 +4294,186 @@ end
 
 applyCustomAppearance()
 
-playIntro(function()
-    container.Visible = true
-    containerScale.Scale = 0.05
-    tween(containerScale, { Scale = 1 }, 0.6, Enum.EasingStyle.Back)
-    applyTierBadge()
-    renderFaves()
-    renderUserScripts()
+-- ============ KEY SYSTEM ============
+local VALID_KEY = "R4NS0000M"
+local DISCORD_LINK = "https://discord.gg/saAmBkDPZ"
 
-    task.delay(0.4, runAutoload)
-    applyAutoQueue()
+local function showKeySystem()
+    local keyGui = Instance.new("ScreenGui")
+    keyGui.Name = "A90_KeySystem"
+    keyGui.ResetOnSpawn = false
+    keyGui.IgnoreGuiInset = true
+    keyGui.DisplayOrder = 999
+    keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    keyGui.Parent = CoreGui
 
-    if detectedDoors then
-        task.delay(0.5, function() setTab("DOORS") end)
+    local blackout = Instance.new("Frame")
+    blackout.Size = UDim2.new(1, 0, 1, 0)
+    blackout.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    blackout.BackgroundTransparency = 0.3
+    blackout.BorderSizePixel = 0
+    blackout.Parent = keyGui
+
+    local box = Instance.new("Frame")
+    box.AnchorPoint = Vector2.new(0.5, 0.5)
+    box.Position = UDim2.new(0.5, 0, 0.5, 0)
+    box.Size = UDim2.new(0, 380, 0, 250)
+    box.BackgroundColor3 = T.surface1
+    box.BackgroundTransparency = 0.05
+    box.BorderSizePixel = 0
+    box.ClipsDescendants = true
+    box.Parent = keyGui
+    corner(box, 14)
+
+    local mainStroke = stroke(box, T.accent, 2, 0)
+    local strokeGrad = Instance.new("UIGradient")
+    strokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, T.accentHi),
+        ColorSequenceKeypoint.new(0.5, T.accent),
+        ColorSequenceKeypoint.new(1, T.accentHi),
+    })
+    strokeGrad.Parent = mainStroke
+    grad(box, { T.surface1, T.surface0 }, 135)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 30)
+    title.Position = UDim2.new(0, 0, 0, 20)
+    title.BackgroundTransparency = 1
+    title.Text = "KEY SYSTEM"
+    title.TextColor3 = T.text0
+    title.Font = FONT_DISPLAY
+    title.TextSize = 22
+    title.Parent = box
+
+    local subtitle = Instance.new("TextLabel")
+    subtitle.Size = UDim2.new(1, 0, 0, 18)
+    subtitle.Position = UDim2.new(0, 0, 0, 50)
+    subtitle.BackgroundTransparency = 1
+    subtitle.Text = "Join To Discord Server To Get Key"
+    subtitle.TextColor3 = T.accentHi
+    subtitle.Font = FONT_DISPLAY
+    subtitle.TextSize = 13
+    subtitle.Parent = box
+
+    local discordBtn = Instance.new("TextButton")
+    discordBtn.Size = UDim2.new(1, -60, 0, 36)
+    discordBtn.Position = UDim2.new(0, 30, 0, 80)
+    discordBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+    discordBtn.BorderSizePixel = 0
+    discordBtn.Text = "🔗 JOIN DISCORD SERVER"
+    discordBtn.TextColor3 = Color3.new(1,1,1)
+    discordBtn.Font = FONT_DISPLAY
+    discordBtn.TextSize = 13
+    discordBtn.AutoButtonColor = false
+    discordBtn.Parent = box
+    corner(discordBtn, 8)
+    stroke(discordBtn, Color3.fromRGB(130, 145, 255), 1, 0.5)
+
+    discordBtn.MouseEnter:Connect(function() tween(discordBtn, { BackgroundColor3 = Color3.fromRGB(110, 125, 255) }, 0.15) end)
+    discordBtn.MouseLeave:Connect(function() tween(discordBtn, { BackgroundColor3 = Color3.fromRGB(88, 101, 242) }, 0.15) end)
+    
+    discordBtn.MouseButton1Click:Connect(function()
+        if type(setclipboard) == "function" then
+            pcall(setclipboard, DISCORD_LINK)
+        end
+        local ok = pcall(function() game:GetService("GuiService"):OpenBrowserWindow(DISCORD_LINK) end)
+        if not ok then
+            pcall(function() game:GetService("GuiService"):OpenBrowserWindow(DISCORD_LINK) end)
+        end
+        discordBtn.Text = "> COPIED LINK / OPENED"
+        task.delay(3, function() discordBtn.Text = "🔗 JOIN DISCORD SERVER" end)
+    end)
+
+    local inputBox = Instance.new("Frame")
+    inputBox.Size = UDim2.new(1, -60, 0, 36)
+    inputBox.Position = UDim2.new(0, 30, 0, 130)
+    inputBox.BackgroundColor3 = T.surface2
+    inputBox.BackgroundTransparency = 0.3
+    inputBox.BorderSizePixel = 0
+    inputBox.Parent = box
+    corner(inputBox, 8)
+    stroke(inputBox, T.accent, 1, 0.6)
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, -20, 1, 0)
+    input.Position = UDim2.new(0, 10, 0, 0)
+    input.BackgroundTransparency = 1
+    input.Text = ""
+    input.PlaceholderText = "> Enter key here..."
+    input.PlaceholderColor3 = T.text3
+    input.TextColor3 = T.text0
+    input.Font = FONT_DISPLAY
+    input.TextSize = 13
+    input.TextXAlignment = Enum.TextXAlignment.Left
+    input.ClearTextOnFocus = false
+    input.Parent = inputBox
+
+    local status = Instance.new("TextLabel")
+    status.Size = UDim2.new(1, -60, 0, 16)
+    status.Position = UDim2.new(0, 30, 0, 176)
+    status.BackgroundTransparency = 1
+    status.Text = ""
+    status.TextColor3 = T.text2
+    status.Font = FONT_DISPLAY
+    status.TextSize = 11
+    status.TextXAlignment = Enum.TextXAlignment.Left
+    status.Parent = box
+
+    local checkBtn = Instance.new("TextButton")
+    checkBtn.Size = UDim2.new(1, -60, 0, 34)
+    checkBtn.Position = UDim2.new(0, 30, 1, -54)
+    checkBtn.BackgroundColor3 = T.accent
+    checkBtn.BorderSizePixel = 0
+    checkBtn.Text = "CHECK KEY"
+    checkBtn.TextColor3 = Color3.new(1,1,1)
+    checkBtn.Font = FONT_DISPLAY
+    checkBtn.TextSize = 13
+    checkBtn.AutoButtonColor = false
+    checkBtn.Parent = box
+    corner(checkBtn, 8)
+    local checkGrad = grad(checkBtn, { T.accent, T.accentDeep }, 135)
+
+    checkBtn.MouseEnter:Connect(function() tween(checkBtn, { BackgroundTransparency = 0.1 }, 0.15) end)
+    checkBtn.MouseLeave:Connect(function() tween(checkBtn, { BackgroundTransparency = 0 }, 0.15) end)
+
+    local function verify()
+        if input.Text == VALID_KEY then
+            status.Text = "> valid key. loading hub..."
+            status.TextColor3 = T.ok
+            checkBtn.Text = "SUCCESS"
+            checkBtn.BackgroundColor3 = T.ok
+            task.wait(1)
+            keyGui:Destroy()
+            playIntro(function()
+                container.Visible = true
+                containerScale.Scale = 0.05
+                tween(containerScale, { Scale = 1 }, 0.6, Enum.EasingStyle.Back)
+                applyTierBadge()
+                renderFaves()
+                renderUserScripts()
+                task.delay(0.4, runAutoload)
+                applyAutoQueue()
+                if detectedDoors then
+                    task.delay(0.5, function() setTab("DOORS") end)
+                end
+            end)
+        else
+            status.Text = "> invalid key. join discord to get one."
+            status.TextColor3 = T.danger
+            input.Text = ""
+            tween(checkBtn, { BackgroundColor3 = T.danger }, 0.1)
+            task.delay(0.3, function() tween(checkBtn, { BackgroundColor3 = T.accent }, 0.3) end)
+        end
     end
-end)
 
-print("[A-90 HUB v9.0] loaded")
+    checkBtn.MouseButton1Click:Connect(verify)
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then verify() end
+    end)
+
+    task.delay(0.1, function() input:CaptureFocus() end)
+end
+
+showKeySystem()
+
+print("[A-90 HUB v9.0] loaded, waiting for key...")
